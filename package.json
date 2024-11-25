@@ -2,10 +2,10 @@
   "name": "_project-a",
   "version": "1.0.0",
   "description": "MICRO SERVICE - TEST ENVIRONMENT 1",
-  "main": "app.js",
+  "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon src/app.js"
   },
   "keywords": [],
   "author": "",
