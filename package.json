@@ -1,5 +1,5 @@
 {
-  "name": "_project-a",
+  "name": "project-a",
   "version": "1.0.0",
   "description": "MICRO SERVICE - TEST ENVIRONMENT 1",
   "main": "src/app.js",
