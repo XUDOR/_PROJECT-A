@@ -82,14 +82,60 @@ main {
 
 .grid-item {
   background-color: #444340;
-  padding: 2rem;
+  padding: 1rem;
   min-height: 200px;
   transition: transform 0.3s ease;
 }
 
-.grid-item:hover {
-  transform: translateY(-5px);
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
 }
+
+input, button {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+form label {
+  display: block;
+  margin-top: .2em;
+  font-weight: lighter;
+}
+
+form input, form textarea, form button {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.2rem;
+  font-size: 1rem;
+}
+
+form textarea {
+  resize: none;
+}
+
+
+button {
+  background-color: #0AAAC3;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #098997;
+}
+
+#form-response {
+  margin-top: 1rem;
+  color: #4CAF50; /* Success message color */
+}
+
+
+
+
 
 /* Footer styles */
 footer {

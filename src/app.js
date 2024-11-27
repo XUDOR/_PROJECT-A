@@ -1,13 +1,20 @@
-//app.js
-
 const express = require('express');
 require('dotenv').config(); // Load environment variables from .env file
 const path = require('path');
+const bodyParser = require('body-parser'); // Middleware for parsing request bodies
+const mainRoutes = require('./routes/mainRoutes'); // Import your routes
 
 const app = express();
 
-// Middleware for static files
+// Middleware for serving static files
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Middleware to parse JSON and form data
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// Use the main routes
+app.use(mainRoutes);
 
 // Basic route for serving index.html
 app.get('/', (req, res) => {
