@@ -6,9 +6,10 @@ const router = express.Router();
 router.post('/api/users', async (req, res) => {
     try {
         const { name, email, phone, address, location, skills, profile_summary } = req.body;
+        console.log('Received data:', req.body);
 
         // Forward the request to Project B
-        const response = await axios.post('http://localhost:3000/api/users', {
+        const response = await axios.post('http://localhost:3002/api/users', {
             name,
             email,
             phone,
@@ -18,12 +19,16 @@ router.post('/api/users', async (req, res) => {
             profile_summary,
         });
 
+        console.log('Response from Project B:', response.data);
+
         // Return the response from Project B
         res.status(200).json(response.data);
     } catch (error) {
         console.error('Error forwarding data to Project B:', error.message);
-        res.status(500).json({ error: 'Failed to submit user' });
+        console.error('Error details:', error.response?.data || error.stack);
+        res.status(500).json({ error: 'Failed to forward data to Project B.' });
     }
 });
+
 
 module.exports = router;
