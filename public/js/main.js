@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const loadingIndicator = document.querySelector('.loading');
     const form = document.getElementById('user-form');
     const responseDiv = document.getElementById('form-response');
+    const jobContainer = document.getElementById('job-container');
+    const refreshJobsButton = document.getElementById('refresh-jobs-btn');
 
     // Navigation handling
     navLinks.forEach(link => {
@@ -37,20 +39,47 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update content based on section
     function updateContent(section) {
         console.log(`Navigating to ${section}`);
-        // Here you would typically update the page content
-        // based on the selected section
     }
 
-    // Responsive handling
-    let resizeTimer;
-    window.addEventListener('resize', function () {
-        // Debounce resize events
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            // Handle any responsive adjustments here
-            console.log('Window resized - layout adjusted');
-        }, 250);
-    });
+    // Function to fetch and display job data
+    async function fetchJobs() {
+        try {
+            showLoading();
+            const response = await fetch('/api/receive-jobs');
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to fetch jobs');
+            }
+
+            // Clear existing content
+            jobContainer.innerHTML = '';
+
+            // Display the job data
+            const job = result.data;
+            const jobDiv = document.createElement('div');
+            jobDiv.classList.add('job-row');
+            jobDiv.innerHTML = `
+                <h3>${job.job_title}</h3>
+                <p><strong>Company:</strong> ${job.company_name}</p>
+                <p><strong>Location:</strong> ${job.location || 'N/A'}</p>
+                <p><strong>Skills:</strong> ${job.skills_required.join(', ') || 'N/A'}</p>
+                <p><strong>Description:</strong> ${job.job_description || 'N/A'}</p>
+            `;
+            jobContainer.appendChild(jobDiv);
+
+            hideLoading();
+        } catch (error) {
+            console.error('Error fetching jobs:', error.message);
+            jobContainer.textContent = 'Failed to load jobs.';
+            hideLoading();
+        }
+    }
+
+    // Attach event listener to the refresh button
+    if (refreshJobsButton) {
+        refreshJobsButton.addEventListener('click', fetchJobs);
+    }
 
     // Form submission handling
     if (form) {
@@ -70,10 +99,8 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             try {
-                // Show loading indicator
                 showLoading();
 
-                // Send data to backend
                 const response = await fetch('/api/users', {
                     method: 'POST',
                     headers: {
@@ -84,10 +111,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const result = await response.json();
 
-                // Hide loading indicator
                 hideLoading();
 
-                // Handle response
                 if (response.ok) {
                     responseDiv.textContent = 'User submitted successfully!';
                     responseDiv.style.color = 'green';
