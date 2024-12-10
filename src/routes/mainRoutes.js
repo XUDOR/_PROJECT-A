@@ -32,5 +32,18 @@ router.post('/api/users', async (req, res) => {
     }
 });
 
+// Route to receive job data from Project F
+router.post('/api/receive-jobs', async (req, res) => {
+    try {
+        const jobData = req.body;
+        console.log('Received job data from Project F:', jobData);
+        res.status(200).json({ message: 'Job data received successfully', data: jobData });
+    } catch (error) {
+        console.error('Error receiving job data:', error.message);
+        res.status(500).json({ error: 'Failed to receive job data.' });
+    }
+});
+
+
 
 module.exports = router;
