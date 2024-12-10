@@ -134,6 +134,47 @@ button:hover {
 }
 
 
+/* Job Row Styling */
+.job-row {
+  border: 1px solid #ddd;
+  background-color: #444340;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #fff;
+}
+
+.job-row h3 {
+  margin-bottom: 0.5rem;
+  color: #0AAAC3;
+}
+
+.job-row p {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+/* Refresh Button */
+.Button-Refresh {
+  padding: 5px 10px;
+  border: 2px solid #0AAAC3;
+  background-color: transparent;
+  color: #0AAAC3;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.Button-Refresh:hover {
+  background-color: #0AAAC3;
+  color: #20232A;
+}
+
+
+
+
+
 
 
 
