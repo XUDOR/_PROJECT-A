@@ -1,5 +1,3 @@
-///  mainRoutes  >>. PROJECT A
-
 const express = require('express');
 const axios = require('axios'); // For making HTTP requests
 const router = express.Router();
@@ -32,7 +30,7 @@ router.post('/api/users', async (req, res) => {
     }
 });
 
-// Route to receive job data from Project F
+// POST route to receive job data from Project F
 router.post('/api/receive-jobs', async (req, res) => {
     try {
         const jobData = req.body;
@@ -43,7 +41,5 @@ router.post('/api/receive-jobs', async (req, res) => {
         res.status(500).json({ error: 'Failed to receive job data.' });
     }
 });
-
-
 
 module.exports = router;

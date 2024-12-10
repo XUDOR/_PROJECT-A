@@ -45,29 +45,36 @@ document.addEventListener('DOMContentLoaded', function () {
     async function fetchJobs() {
         try {
             showLoading();
-            const response = await fetch('/api/receive-jobs');
+            const response = await fetch('/api/receive-jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            });
             const result = await response.json();
-
+    
             if (!response.ok) {
                 throw new Error(result.error || 'Failed to fetch jobs');
             }
-
+    
             // Clear existing content
             jobContainer.innerHTML = '';
-
+    
             // Display the job data
             const job = result.data;
+            console.log('Job Data:', job);  // Debugging line
             const jobDiv = document.createElement('div');
             jobDiv.classList.add('job-row');
             jobDiv.innerHTML = `
                 <h3>${job.job_title}</h3>
                 <p><strong>Company:</strong> ${job.company_name}</p>
                 <p><strong>Location:</strong> ${job.location || 'N/A'}</p>
-                <p><strong>Skills:</strong> ${job.skills_required.join(', ') || 'N/A'}</p>
+                <p><strong>Skills:</strong> ${Array.isArray(job.skills_required) ? job.skills_required.join(', ') : 'N/A'}</p>
                 <p><strong>Description:</strong> ${job.job_description || 'N/A'}</p>
             `;
             jobContainer.appendChild(jobDiv);
-
+    
             hideLoading();
         } catch (error) {
             console.error('Error fetching jobs:', error.message);
@@ -75,6 +82,8 @@ document.addEventListener('DOMContentLoaded', function () {
             hideLoading();
         }
     }
+    
+    
 
     // Attach event listener to the refresh button
     if (refreshJobsButton) {
