@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok) {
                     responseDiv.textContent = 'User submitted successfully!';
                     responseDiv.style.color = 'green';
+                    form.reset(); // Clear the form fields
+                    
                 } else {
                     responseDiv.textContent = `Error: ${result.error}`;
                     responseDiv.style.color = 'red';
