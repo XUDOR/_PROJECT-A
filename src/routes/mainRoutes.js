@@ -2,6 +2,16 @@ const express = require('express');
 const axios = require('axios'); // For making HTTP requests
 const router = express.Router();
 
+
+// ------------------- API STATUS ROUTE ------------------- //
+router.get('/api/status', (req, res) => {
+    res.json({
+        status: 'active',
+        version: '1.0',
+        message: 'Project A is running'
+    });
+});
+
 // POST route to handle form submissions
 router.post('/api/users', async (req, res) => {
     try {
