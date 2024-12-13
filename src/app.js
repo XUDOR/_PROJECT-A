@@ -1,12 +1,19 @@
-//app.js >> PROJECT A
+// app.js >> PROJECT A
 
 const express = require('express');
-require('dotenv').config(); // Load environment variables from .env file
+const axios = require('axios');       // Import axios for HTTP requests
+require('dotenv').config();           // Load environment variables from .env file
+
+console.log('Loaded PORT:', process.env.PORT);
+
 const path = require('path');
 const bodyParser = require('body-parser'); // Middleware for parsing request bodies
 const mainRoutes = require('./routes/mainRoutes'); // Import your routes
 
 const app = express();
+
+// Define the PORT variable
+const PORT = process.env.PORT || 3001;
 
 // Middleware for serving static files
 app.use(express.static(path.join(__dirname, '../public')));
@@ -35,9 +42,8 @@ const notifyProjectF = async () => {
     }
 };
 
-
 // Start the server
-const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Project A is running on http://localhost:${PORT}`);
+    notifyProjectF();  // Call the notification function here
 });
