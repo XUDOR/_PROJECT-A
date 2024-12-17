@@ -12,6 +12,13 @@ router.get('/api/status', (req, res) => {
     });
 });
 
+// ---------------- HEALTHCHECK ---------------- //
+
+router.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'Project A is up and running' });
+});
+
+
 // ------------------- FORM SUBMISSION ROUTE ------------------- //
 // POST route to handle form submissions and forward to Project B
 router.post('/api/users', async (req, res) => {
