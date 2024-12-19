@@ -1,11 +1,37 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // DOM Elements
+    // Authentication Elements
+    const loginForm = document.getElementById('login-form');
+    const signupSection = document.getElementById('signup-section');
+    const showSignupBtn = document.getElementById('show-signup');
+    const userInfo = document.getElementById('user-info');
+    const userName = document.getElementById('user-name');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // Navigation Elements
     const navLinks = document.querySelectorAll('.nav-menu a');
     const loadingIndicator = document.querySelector('.loading');
     const form = document.getElementById('user-form');
     const responseDiv = document.getElementById('form-response');
     const jobContainer = document.getElementById('job-container');
     const refreshJobsButton = document.getElementById('refresh-jobs-btn');
+
+    // Event Listeners for Auth
+    showSignupBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        signupSection.style.display = 'block';
+        loginForm.style.display = 'none';
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        loginForm.style.display = 'flex';
+        userInfo.style.display = 'none';
+        signupSection.style.display = 'none';
+    });
+    
+
+
 
     // Navigation handling
     navLinks.forEach(link => {

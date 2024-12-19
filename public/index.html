@@ -15,8 +15,21 @@
                 <li><a href="#" data-section="Data Section 1">Data Section 1</a></li>
                 <li><a href="#" data-section="Data Section 2">Data Section 2</a></li>
                 <li><a href="#" data-section="Data Section 3">Data Section 3</a></li>
+                <li class="auth-section">
+                    <div id="login-form" class="auth-form">
+                        <input type="email" id="login-email" placeholder="Email" required>
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <button id="login-btn">Login</button>
+                        <a href="#" id="show-signup">Create Account</a>
+                    </div>
+                    <div id="user-info" class="auth-info" style="display: none;">
+                        <span id="user-name"></span>
+                        <button id="logout-btn">Logout</button>
+                    </div>
+                </li>
             </ul>
         </nav>
+        
     </header>
 
     <main>
@@ -65,6 +78,22 @@
             <div class="grid-item">
                 <h2>Match | Sort</h2>
                
+            </div>
+
+            <div class="grid-item signup-section" id="signup-section" style="display: none;">
+                <h2>Create Account</h2>
+                <form id="signup-form" class="auth-form">
+                    <input type="text" id="signup-name" placeholder="Full Name" required>
+                    <input type="email" id="signup-email" placeholder="Email" required>
+                    <input type="password" id="signup-password" placeholder="Password" required>
+                    <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
+                    <select id="account-type" required>
+                        <option value="">Select Account Type</option>
+                        <option value="user">Job Seeker</option>
+                        <option value="company">Company</option>
+                    </select>
+                    <button type="submit">Create Account</button>
+                </form>
             </div>
         </div>
     </main>

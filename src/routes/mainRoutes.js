@@ -2,6 +2,10 @@ const express = require('express');
 const axios = require('axios'); // For making HTTP requests
 const { PROJECT_B_URL, PROJECT_F_URL } = require('../../config/const'); // Import URLs from const.js
 const router = express.Router();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+
 
 // ------------------- API STATUS ROUTE ------------------- //
 router.get('/api/status', (req, res) => {
@@ -17,6 +21,32 @@ router.get('/api/status', (req, res) => {
 router.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'Project A is up and running' });
 });
+
+// ---------------- AUTHENTICATION ---------------- //
+
+
+rrouter.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { name, email, password, accountType } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const result = await axios.post(PROJECT_B_URL, {
+            name,
+            email,
+            password: hashedPassword,
+            account_type: accountType
+        });
+
+        const token = jwt.sign({ email, accountType }, process.env.JWT_SECRET);
+        res.json({ token, user: { name, email, accountType } });
+    } catch (error) {
+        console.error('Signup error:', error.message);
+        res.status(500).json({ error: error.response?.data?.error || 'Signup failed.' });
+    }
+});
+
+
+
 
 
 // ------------------- FORM SUBMISSION ROUTE ------------------- //

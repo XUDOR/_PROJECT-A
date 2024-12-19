@@ -192,6 +192,57 @@ button:hover {
 }
 
 
+.auth-section {
+  margin-left: auto;
+  padding: 0 1rem;
+}
+
+.auth-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.auth-form input {
+  padding: 0.4rem;
+  border: 1px solid #4F8FBA;
+  border-radius: 4px;
+  background-color: #20232A;
+  color: #FFFFFA;
+}
+
+.auth-form button {
+  padding: 0.4rem 1rem;
+  border: 2px solid #0AAAC3;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #0AAAC3;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-form button:hover {
+  background-color: #0AAAC3;
+  color: #20232A;
+}
+
+.signup-section {
+  background-color: #444340;
+  padding: 2rem;
+  border-radius: 8px;
+  display: none;
+}
+
+#signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+
+
 
 
 
