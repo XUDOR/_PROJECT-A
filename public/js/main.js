@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const userInfo = document.getElementById('user-info');
     const userName = document.getElementById('user-name');
     const logoutBtn = document.getElementById('logout-btn');
+    const passwordField = document.getElementById('signup-password');
+    const togglePasswordButton = document.getElementById('toggle-password');
 
     // Navigation Elements
     const navLinks = document.querySelectorAll('.nav-menu a');
@@ -29,9 +31,55 @@ document.addEventListener('DOMContentLoaded', function () {
         userInfo.style.display = 'none';
         signupSection.style.display = 'none';
     });
+
+    // Signup Form Submission
+    const signupForm = document.getElementById('signup-form');
+    signupForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const userDetails = {
+            username: document.getElementById('signup-username').value,
+            name: document.getElementById('signup-name').value,
+            email: document.getElementById('signup-email').value,
+            password: document.getElementById('signup-password').value,
+            accountType: document.getElementById('account-type').value,
+        };
+
+        if (!username || !name || !email || !password || !accountType) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userDetails),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Account created successfully!');
+            } else {
+                alert('Failed to create account: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Signup error:', error.message);
+            alert('An unexpected error occurred.');
+        }
+    });
+
+
+
+
     
-
-
+    // Password View Toggle
+    togglePasswordButton.addEventListener('click', () => {
+        const type = passwordField.type === 'password' ? 'text' : 'password';
+        passwordField.type = type;
+        togglePasswordButton.textContent = type === 'password' ? 'View' : 'Hide';
+    });
 
     // Navigation handling
     navLinks.forEach(link => {
@@ -79,14 +127,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify({})
             });
             const result = await response.json();
-    
+
             if (!response.ok) {
                 throw new Error(result.error || 'Failed to fetch jobs');
             }
-    
+
             // Clear existing content
             jobContainer.innerHTML = '';
-    
+
             // Display the job data
             const job = result.data;
             console.log('Job Data:', job);  // Debugging line
@@ -100,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p><strong>Description:</strong> ${job.job_description || 'N/A'}</p>
             `;
             jobContainer.appendChild(jobDiv);
-    
+
             hideLoading();
         } catch (error) {
             console.error('Error fetching jobs:', error.message);
@@ -108,15 +156,13 @@ document.addEventListener('DOMContentLoaded', function () {
             hideLoading();
         }
     }
-    
-    
 
     // Attach event listener to the refresh button
     if (refreshJobsButton) {
         refreshJobsButton.addEventListener('click', fetchJobs);
     }
 
-    // Form submission handling
+    // Form submission handling for profile form
     if (form) {
         form.addEventListener('submit', async function (e) {
             e.preventDefault(); // Prevent default form submission
@@ -152,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     responseDiv.textContent = 'User submitted successfully!';
                     responseDiv.style.color = 'green';
                     form.reset(); // Clear the form fields
-                    
                 } else {
                     responseDiv.textContent = `Error: ${result.error}`;
                     responseDiv.style.color = 'red';

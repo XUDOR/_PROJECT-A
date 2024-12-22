@@ -29,6 +29,13 @@ router.post('/api/auth/signup', async (req, res) => {
     try {
         const { name, email, password, accountType } = req.body;
 
+        // Validate required fields
+        if (!name || !email || !password || !accountType) {
+            return res.status(400).json({ error: 'All fields are required.' });
+        }
+
+        console.log('Signup request received:', { name, email, accountType });
+
         // Forward raw user details to Project Z for processing
         const response = await axios.post(`${PROJECT_Z_URL}/api/auth/signup`, {
             name,
@@ -36,15 +43,46 @@ router.post('/api/auth/signup', async (req, res) => {
             password,
             accountType,
         });
-        
 
-        // Respond with the result from Project Z
-        res.json(response.data);
+        // Check for a successful response from Project Z
+        if (response.status === 200) {
+            console.log('Account successfully created in Project Z:', response.data);
+
+            // Notify Project F about the new account creation
+            await axios.post(PROJECT_F_URL, {
+                message: `Account created for ${name} (${email}).`,
+            });
+
+            console.log('Notification sent to Project F for new account creation.');
+
+            // Send the response back to the client
+            return res.status(200).json({
+                message: 'Account created successfully.',
+                data: response.data,
+            });
+        } else {
+            console.error('Error from Project Z:', response.data);
+            return res.status(response.status).json({
+                error: response.data.error || 'Unknown error from Project Z.',
+            });
+        }
     } catch (error) {
         console.error('Signup error:', error.message);
-        res.status(500).json({ error: 'Signup failed.' });
+
+        // Handle errors from Project Z or Project F
+        if (error.response) {
+            // Error response from the forwarded service
+            console.error('Error response from Project Z:', error.response.data);
+            return res.status(error.response.status).json({
+                error: error.response.data.error || 'Error from Project Z.',
+            });
+        }
+
+        // General error fallback
+        res.status(500).json({ error: 'Signup failed due to an internal server error.' });
     }
 });
+
 
 
 // ------------------- FORM SUBMISSION ROUTE ------------------- //
@@ -75,6 +113,11 @@ router.post('/api/users', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Failed to forward data to Project B.' });
     }
 });
+
+
+
+
+
 
 // ------------------- RECEIVE JOB DATA FROM PROJECT F ------------------- //
 // Protect this route using JWT
