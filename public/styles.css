@@ -234,11 +234,11 @@ button:hover {
 .signup-section {
   background-color: #444340;
   padding: 2rem;               /* Increased padding for breathing room */
-  border-radius: 8px;
+  border: 1px solid #0AAAC3;
   display: none;               /* Toggled by JS when user clicks 'Create Account' */
-  max-width: 600px;            /* Optional: limit the width for better readability */
-  margin: 0 auto;              /* Center it horizontally if you like */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+  
+  
+  
 }
 
 /* Optional heading style for the "Create Account" */
@@ -253,29 +253,35 @@ button:hover {
 #signup-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 400px;            /* Keep the form narrower for easy scanning */
-  margin: 0 auto;              /* Center it within the .signup-section */
+  gap: 1rem; 
 }
+
+#signup-form input,
+#signup-form select {
+  width: 100%;  /* Fill the entire width of the form container */
+  max-width: 100%; /* Ensure they don't shrink or have a smaller default */
+}
+
 
 /* Group password fields in a small vertical stack */
-.password-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;                   /* Space between the two password containers */
+.password-fields input {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1; /* ensures it grows in a flex container */
 }
 
-/* Each password row */
+
 .password-container {
-  display: flex;
+  
   align-items: center;
-  gap: 0.5rem;                 /* Space between label, input, button */
+  /* Because there's no button here now, you can remove margin-left: auto if you had it. */
+  gap: 0.5rem;
 }
 
 /* Make label slightly larger or aligned if you wish */
 .password-container label {
-  min-width: 120px;            /* Enough space for "Confirm Password" text */
-  font-weight: bold;
+  min-width: 100px;            /* Enough space for "Confirm Password" text */
+  font-weight: lighter;
   color: #0AAAC3;
 }
 
@@ -293,6 +299,22 @@ button:hover {
   background-color: #0AAAC3;
   color: #20232A;
 }
+
+
+.password-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.password-fields input {
+  width: 100%;
+  max-width: 100%;
+}
+
+
+
 
 /* The feedback div for success/error messages */
 #signup-response {

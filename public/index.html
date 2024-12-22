@@ -91,18 +91,28 @@
       <input type="email" id="signup-email" placeholder="Email" required>
   
       <!-- Passwords Container -->
-      <div class="password-fields">
-        <div class="password-container">
-          <label for="signup-password">Password:</label>
-          <input type="password" id="signup-password" required>
-        </div>
-        <div class="password-container">
-          <label for="signup-confirm-password">Confirm Password:</label>
-          <input type="password" id="signup-confirm-password" required>
-        </div>
-        <!-- Single toggle button for both fields -->
-        <button type="button" id="toggle-password">View</button>
-      </div>
+      <!-- In your signup form -->
+<div class="password-fields">
+    <!-- Just like your other inputs -->
+    <input
+      type="password"
+      id="signup-password"
+      placeholder="Password"
+      required
+    />
+    
+    <input
+      type="password"
+      id="signup-confirm-password"
+      placeholder="Confirm Password"
+      required
+    />
+  
+    <!-- Single toggle button for both fields -->
+    <button type="button" id="toggle-password">View</button>
+  </div>
+  
+      
   
       <select id="account-type" required>
         <option value="">Select Account Type</option>

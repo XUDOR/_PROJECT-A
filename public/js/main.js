@@ -121,16 +121,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ========== SINGLE PASSWORD TOGGLE FOR BOTH FIELDS ==========
     togglePasswordButton.addEventListener('click', () => {
+        // Check the current type of the password field.
         const currentType = passwordField.type; // 'password' or 'text'
-        const isPassword = (currentType === 'password');
-
-        // Switch both fields
-        passwordField.type = isPassword ? 'text' : 'password';
-        confirmPasswordField.type = isPassword ? 'text' : 'password';
-
-        // Update button text
-        togglePasswordButton.textContent = isPassword ? 'Hide' : 'View';
-    });
+        const isPasswordType = (currentType === 'password');
+      
+        // Toggle BOTH fields to the same type.
+        passwordField.type = isPasswordType ? 'text' : 'password';
+        confirmPasswordField.type = isPasswordType ? 'text' : 'password';
+      
+        // Update the toggle button’s text accordingly.
+        togglePasswordButton.textContent = isPasswordType ? 'Hide' : 'View';
+      });
 
     // ========== NAVIGATION HANDLING ==========
     navLinks.forEach(link => {
