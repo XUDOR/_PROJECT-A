@@ -1,11 +1,12 @@
 const express = require('express');
 const axios = require('axios'); // For making HTTP requests
-const { PROJECT_B_URL, PROJECT_F_URL } = require('../../config/const'); // Import URLs from const.js
-const router = express.Router();
-const bcrypt = require('bcrypt');
+const { PROJECT_B_URL, PROJECT_F_URL } = require('../../config/const'); // Import constants
+const PROJECT_Z_URL = process.env.PROJECT_Z_URL;
+const authenticateToken = require('../middleware/authenticateToken'); // Import middleware
+
 const jwt = require('jsonwebtoken');
 
-
+const router = express.Router();
 
 // ------------------- API STATUS ROUTE ------------------- //
 router.get('/api/status', (req, res) => {
@@ -17,43 +18,41 @@ router.get('/api/status', (req, res) => {
 });
 
 // ---------------- HEALTHCHECK ---------------- //
-
 router.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'Project A is up and running' });
 });
 
 // ---------------- AUTHENTICATION ---------------- //
 
-
-rrouter.post('/api/auth/signup', async (req, res) => {
+/// Signup route
+router.post('/api/auth/signup', async (req, res) => {
     try {
         const { name, email, password, accountType } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
 
-        const result = await axios.post(PROJECT_B_URL, {
+        // Forward raw user details to Project Z for processing
+        const response = await axios.post(`${PROJECT_Z_URL}/api/auth/signup`, {
             name,
             email,
-            password: hashedPassword,
-            account_type: accountType
+            password,
+            accountType,
         });
+        
 
-        const token = jwt.sign({ email, accountType }, process.env.JWT_SECRET);
-        res.json({ token, user: { name, email, accountType } });
+        // Respond with the result from Project Z
+        res.json(response.data);
     } catch (error) {
         console.error('Signup error:', error.message);
-        res.status(500).json({ error: error.response?.data?.error || 'Signup failed.' });
+        res.status(500).json({ error: 'Signup failed.' });
     }
 });
 
 
-
-
-
 // ------------------- FORM SUBMISSION ROUTE ------------------- //
-// POST route to handle form submissions and forward to Project B
-router.post('/api/users', async (req, res) => {
+// Protect this route using JWT
+router.post('/api/users', authenticateToken, async (req, res) => {
     try {
         const { name, email, phone, address, location, skills, profile_summary } = req.body;
+
         console.log('Received data:', req.body);
 
         // Forward the request to Project B
@@ -64,7 +63,7 @@ router.post('/api/users', async (req, res) => {
             address,
             location,
             skills,
-            profile_summary,
+            profile_summary
         });
 
         console.log('Response from Project B:', response.data);
@@ -73,13 +72,13 @@ router.post('/api/users', async (req, res) => {
         res.status(200).json(response.data);
     } catch (error) {
         console.error('Error forwarding data to Project B:', error.message);
-        console.error('Error details:', error.response?.data || error.stack);
         res.status(500).json({ error: 'Failed to forward data to Project B.' });
     }
 });
 
 // ------------------- RECEIVE JOB DATA FROM PROJECT F ------------------- //
-router.post('/api/receive-jobs', async (req, res) => {
+// Protect this route using JWT
+router.post('/api/receive-jobs', authenticateToken, async (req, res) => {
     try {
         const jobData = req.body;
         console.log('Received job data from Project F:', jobData);
@@ -91,8 +90,8 @@ router.post('/api/receive-jobs', async (req, res) => {
 });
 
 // ------------------- NOTIFY PROJECT F ------------------- //
-// POST route to send a notification to Project F
-router.post('/api/notify', async (req, res) => {
+// Protect this route using JWT
+router.post('/api/notify', authenticateToken, async (req, res) => {
     try {
         const { message } = req.body;
         if (!message) {
