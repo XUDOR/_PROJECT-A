@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // ====================================
     // Authentication Elements
+    // ====================================
     const loginForm = document.getElementById('login-form');
     const signupSection = document.getElementById('signup-section');
     const showSignupBtn = document.getElementById('show-signup');
@@ -7,17 +9,32 @@ document.addEventListener('DOMContentLoaded', function () {
     const userName = document.getElementById('user-name');
     const logoutBtn = document.getElementById('logout-btn');
 
-    // Password Toggle Elements
+    // ====================================
+    // Single Toggle for Both Password Fields
+    // ====================================
     const passwordField = document.getElementById('signup-password');
+    const confirmPasswordField = document.getElementById('signup-confirm-password');
     const togglePasswordButton = document.getElementById('toggle-password');
 
-    // Navigation Elements
+    // ====================================
+    // Navigation & Loading Elements
+    // ====================================
     const navLinks = document.querySelectorAll('.nav-menu a');
     const loadingIndicator = document.querySelector('.loading');
+
+    // ====================================
+    // "Submit User" Form Elements (Profile)
+    // ====================================
     const form = document.getElementById('user-form');
     const responseDiv = document.getElementById('form-response');
     const jobContainer = document.getElementById('job-container');
     const refreshJobsButton = document.getElementById('refresh-jobs-btn');
+
+    // ====================================
+    // Signup Form & Response
+    // ====================================
+    const signupForm = document.getElementById('signup-form');
+    const signupResponseDiv = document.getElementById('signup-response');  // For success/error messages
 
     // ========== AUTH EVENT LISTENERS ==========
 
@@ -39,35 +56,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ========== SIGNUP FORM SUBMISSION ==========
 
-    const signupForm = document.getElementById('signup-form');
     signupForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         // Collect user input
-        const userDetails = {
-            username: document.getElementById('signup-username').value,
-            name: document.getElementById('signup-name').value,
-            email: document.getElementById('signup-email').value,
-            password: document.getElementById('signup-password').value,
-            confirmPassword: document.getElementById('signup-confirm-password').value,
-            accountType: document.getElementById('account-type').value,
-        };
-
-        // Destructure or use userDetails directly
-        const { username, name, email, password, confirmPassword, accountType } = userDetails;
+        const username = document.getElementById('signup-username').value.trim();
+        const name = document.getElementById('signup-name').value.trim();
+        const email = document.getElementById('signup-email').value.trim();
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        const accountType = document.getElementById('account-type').value;
 
         // Basic validation
         if (!username || !name || !email || !password || !accountType) {
-            alert('Please fill in all required fields.');
+            signupResponseDiv.textContent = 'Please fill in all required fields.';
+            signupResponseDiv.style.color = 'red';
             return;
         }
-
         if (password !== confirmPassword) {
-            alert('Passwords do not match.');
+            signupResponseDiv.textContent = 'Passwords do not match.';
+            signupResponseDiv.style.color = 'red';
             return;
         }
 
         try {
+            showLoading();
+
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -81,25 +95,41 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const result = await response.json();
+
+            hideLoading();
+
             if (response.ok) {
-                alert('Account created successfully!');
-                // Optionally, hide signup section or clear form
+                // Show success
+                signupResponseDiv.textContent = 'Account created successfully!';
+                signupResponseDiv.style.color = 'green';
+                signupForm.reset();
+
+                // Optionally hide the signup section or switch back to login
                 signupSection.style.display = 'none';
                 loginForm.style.display = 'flex';
             } else {
-                alert('Failed to create account: ' + (result.error || 'Unknown error'));
+                signupResponseDiv.textContent = `Failed to create account: ${result.error || 'Unknown error'}`;
+                signupResponseDiv.style.color = 'red';
             }
         } catch (error) {
+            hideLoading();
             console.error('Signup error:', error.message);
-            alert('An unexpected error occurred.');
+            signupResponseDiv.textContent = 'An unexpected error occurred.';
+            signupResponseDiv.style.color = 'red';
         }
     });
 
-    // ========== PASSWORD VIEW TOGGLE ==========
+    // ========== SINGLE PASSWORD TOGGLE FOR BOTH FIELDS ==========
     togglePasswordButton.addEventListener('click', () => {
-        const currentType = passwordField.type;
-        passwordField.type = currentType === 'password' ? 'text' : 'password';
-        togglePasswordButton.textContent = currentType === 'password' ? 'Hide' : 'View';
+        const currentType = passwordField.type; // 'password' or 'text'
+        const isPassword = (currentType === 'password');
+
+        // Switch both fields
+        passwordField.type = isPassword ? 'text' : 'password';
+        confirmPasswordField.type = isPassword ? 'text' : 'password';
+
+        // Update button text
+        togglePasswordButton.textContent = isPassword ? 'Hide' : 'View';
     });
 
     // ========== NAVIGATION HANDLING ==========
@@ -149,9 +179,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             jobContainer.innerHTML = ''; // Clear existing content
 
-            // Display job data (assuming only one job for the example)
+            // Display job data (assuming just one job or adapt for multiple)
             const job = result.data;
-            console.log('Job Data:', job); // Debug
+            console.log('Job Data:', job);  // Debug
 
             const jobDiv = document.createElement('div');
             jobDiv.classList.add('job-row');

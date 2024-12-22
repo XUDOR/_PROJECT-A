@@ -76,7 +76,7 @@ main {
 /* Desktop breakpoint */
 @media (min-width: 1024px) {
   .grid-container {
-      grid-template-columns: repeat(3, 1fr);  /* 3 columns for desktop */
+      grid-template-columns: repeat(4, 1fr);  /* 4 columns for desktop */
   }
 }
 
@@ -226,26 +226,83 @@ button:hover {
   color: #20232A;
 }
 
+/* =============================== */
+/* CREATE ACCOUNT SECTION STYLES  */
+/* =============================== */
+
+/* The outer container for the signup form */
 .signup-section {
   background-color: #444340;
-  padding: 2rem;
+  padding: 2rem;               /* Increased padding for breathing room */
   border-radius: 8px;
-  display: none;
+  display: none;               /* Toggled by JS when user clicks 'Create Account' */
+  max-width: 600px;            /* Optional: limit the width for better readability */
+  margin: 0 auto;              /* Center it horizontally if you like */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
 }
 
+/* Optional heading style for the "Create Account" */
+.signup-section h2 {
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #0AAAC3;              /* A bright accent color */
+  font-size: 1.6rem;
+}
+
+/* The form inside the signup section */
 #signup-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 400px;
-  margin: 0 auto;
+  max-width: 400px;            /* Keep the form narrower for easy scanning */
+  margin: 0 auto;              /* Center it within the .signup-section */
 }
 
+/* Group password fields in a small vertical stack */
+.password-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;                   /* Space between the two password containers */
+}
 
+/* Each password row */
+.password-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;                 /* Space between label, input, button */
+}
 
+/* Make label slightly larger or aligned if you wish */
+.password-container label {
+  min-width: 120px;            /* Enough space for "Confirm Password" text */
+  font-weight: bold;
+  color: #0AAAC3;
+}
 
+/* Style the "View" button for password toggling */
+.password-container button {
+  margin-left: auto;           /* Push it to the right end if you like */
+  border: 2px solid #0AAAC3;   /* Match your theme colors */
+  background-color: transparent;
+  color: #0AAAC3;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
 
+.password-container button:hover {
+  background-color: #0AAAC3;
+  color: #20232A;
+}
 
+/* The feedback div for success/error messages */
+#signup-response {
+  margin-top: 1rem;
+  text-align: center;          /* Center the message */
+  font-weight: bold;
+  /* Success/error colors can be adjusted in main.js or here: */
+  /* color: #4CAF50; // for success, e.g. green */
+  /* color: #ff5252; // for error, e.g. red */
+}
 
 
 

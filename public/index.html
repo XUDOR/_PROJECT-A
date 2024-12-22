@@ -82,28 +82,42 @@
             </div>
 
             <!-- Grid Item 4: Signup Section -->
-            <div class="grid-item signup-section" id="signup-section" style="display: none;">
-                <h2>Create Account</h2>
-                <form id="signup-form" class="auth-form">
-                    <input type="text" id="signup-username" placeholder="Username" required>
-                    <input type="text" id="signup-name" placeholder="Full Name" required>
-                    <input type="email" id="signup-email" placeholder="Email" required>
-
-                    <label for="signup-password">Password:</label>
-                    <input type="password" id="signup-password" required>
-                    <button type="button" id="toggle-password">View</button>
-
-                    <label for="signup-confirm-password">Confirm Password:</label>
-                    <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
-
-                    <select id="account-type" required>
-                        <option value="">Select Account Type</option>
-                        <option value="user">Job Seeker</option>
-                        <option value="company">Company</option>
-                    </select>
-                    <button type="submit">Create Account</button>
-                </form>
-            </div>
+            <!-- In your /public/index.html signup section -->
+<div class="grid-item signup-section" id="signup-section" style="display: none;">
+    <h2>Create Account</h2>
+    <form id="signup-form" class="auth-form">
+      <input type="text" id="signup-username" placeholder="Username" required>
+      <input type="text" id="signup-name" placeholder="Full Name" required>
+      <input type="email" id="signup-email" placeholder="Email" required>
+  
+      <!-- Passwords Container -->
+      <div class="password-fields">
+        <div class="password-container">
+          <label for="signup-password">Password:</label>
+          <input type="password" id="signup-password" required>
+        </div>
+        <div class="password-container">
+          <label for="signup-confirm-password">Confirm Password:</label>
+          <input type="password" id="signup-confirm-password" required>
+        </div>
+        <!-- Single toggle button for both fields -->
+        <button type="button" id="toggle-password">View</button>
+      </div>
+  
+      <select id="account-type" required>
+        <option value="">Select Account Type</option>
+        <option value="user">Job Seeker</option>
+        <option value="company">Company</option>
+      </select>
+  
+      <button type="submit">Create Account</button>
+    </form>
+  
+    <!-- Feedback div for success/error messages -->
+    <div id="signup-response" style="margin-top: 1em;"></div>
+  </div>
+  
+  
         </div>
     </main>
 
