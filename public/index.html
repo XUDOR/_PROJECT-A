@@ -31,11 +31,11 @@
                 </li>
             </ul>
         </nav>
-
     </header>
 
     <main>
         <div class="grid-container">
+            <!-- Grid Item 1: Submit User Form -->
             <div class="grid-item">
                 <h2>Submit User</h2>
                 <form id="user-form">
@@ -66,31 +66,36 @@
                 <div id="form-response"></div>
             </div>
 
-
+            <!-- Grid Item 2: Opportunity Section -->
             <div class="grid-item">
                 <h2>Opportunity</h2>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>Job Postings</div>
                     <button id="refresh-jobs-btn" class="Button-Refresh">Refresh Jobs</button>
-
                 </div>
                 <div id="job-container" class="DBContents">No jobs yet. Click "Refresh Jobs" to load postings.</div>
             </div>
 
-
+            <!-- Grid Item 3: Match / Sort Placeholder -->
             <div class="grid-item">
                 <h2>Match | Sort</h2>
-
             </div>
 
+            <!-- Grid Item 4: Signup Section -->
             <div class="grid-item signup-section" id="signup-section" style="display: none;">
                 <h2>Create Account</h2>
                 <form id="signup-form" class="auth-form">
                     <input type="text" id="signup-username" placeholder="Username" required>
                     <input type="text" id="signup-name" placeholder="Full Name" required>
                     <input type="email" id="signup-email" placeholder="Email" required>
-                    <input type="password" id="signup-password" placeholder="Password" required>
+
+                    <label for="signup-password">Password:</label>
+                    <input type="password" id="signup-password" required>
+                    <button type="button" id="toggle-password">View</button>
+
+                    <label for="signup-confirm-password">Confirm Password:</label>
                     <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
+
                     <select id="account-type" required>
                         <option value="">Select Account Type</option>
                         <option value="user">Job Seeker</option>
@@ -98,7 +103,6 @@
                     </select>
                     <button type="submit">Create Account</button>
                 </form>
-                
             </div>
         </div>
     </main>
@@ -110,7 +114,6 @@
     <div class="loading">Loading...</div>
 
     <script src="js/main.js"></script>
-
 </body>
 
 </html>
