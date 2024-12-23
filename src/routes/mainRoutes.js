@@ -124,72 +124,103 @@ router.post('/api/auth/signup', async (req, res) => {
  * Forwards to Project Z at /api/auth/login
  */
 router.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required.' });
+    try {
+        const { email, password } = req.body;
+
+        // Basic validation
+        if (!email || !password) {
+            console.log('[Validation Error] Missing email or password in request payload.');
+            return res.status(400).json({ error: 'Email and password are required.' });
+        }
+        if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+            console.log('[Validation Error] Invalid email format:', email);
+            return res.status(400).json({ error: 'Invalid email format.' });
+        }
+        if (password.length < 6) {
+            console.log('[Validation Error] Password too short:', { email });
+            return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+        }
+
+        console.log('[Request Initiated] Forwarding login request to Project Z:', { email });
+
+        // Forward login credentials to Project Z
+        const response = await axios.post(`${PROJECT_Z_URL}/api/auth/login`, {
+            email,
+            password,
+        });
+
+        console.log('[Response Received] Project Z response:', {
+            status: response.status,
+            data: response.data,
+        });
+
+        if (response.status === 200) {
+            const { token, user } = response.data;
+
+            // Notify Project F
+            console.log('[Notification] Sending login success notification to Project F:', {
+                user: user?.username || email,
+            });
+            await axios.post(PROJECT_F_URL, {
+                message: `User logged in: ${user?.username || email}`,
+                status: 'success',
+                source: 'Project A',
+            });
+
+            console.log('[Login Success] Returning token and user info to frontend:', {
+                user: user?.username,
+            });
+            return res.status(200).json({
+                message: 'Login successful.',
+                token,
+                user,
+            });
+        } else {
+            console.error('[Unexpected Response] Non-200 status from Project Z:', {
+                status: response.status,
+                error: response.data.error,
+            });
+
+            await axios.post(PROJECT_F_URL, {
+                message: `Login attempt failed for ${email} (Z returned status: ${response.status}).`,
+                status: 'error',
+                source: 'Project A',
+            });
+
+            return res.status(response.status).json({
+                error: response.data.error || 'Unknown error from Project Z.',
+            });
+        }
+    } catch (error) {
+        console.error('[Login Error] An error occurred:', error.message);
+
+        if (error.response) {
+            console.error('[Error Response from Project Z] Details:', {
+                status: error.response.status,
+                data: error.response.data,
+            });
+
+            await axios.post(PROJECT_F_URL, {
+                message: `Login error for ${req.body.email}: ${error.response.data.error}`,
+                status: 'error',
+                source: 'Project A',
+            });
+
+            return res.status(error.response.status).json({
+                error: error.response.data.error || 'Error from Project Z.',
+            });
+        }
+
+        // General error fallback
+        console.error('[General Error] Internal server error occurred during login for:', email);
+        await axios.post(PROJECT_F_URL, {
+            message: `Login error for ${req.body.email}. Internal server error.`,
+            status: 'error',
+            source: 'Project A',
+        });
+
+        res.status(500).json({ error: 'Login failed due to an internal server error.' });
     }
-
-    // Forward login credentials to Project Z
-    const response = await axios.post(`${PROJECT_Z_URL}/api/auth/login`, {
-      email,
-      password,
-    });
-
-    // Suppose Project Z returns { token, user } on success
-    if (response.status === 200) {
-      const { token, user } = response.data;
-
-      // Notify Project F about successful login
-      await axios.post(PROJECT_F_URL, {
-        message: `User logged in: ${user?.username || email}`,
-        status: 'success',
-        source: 'Project A',
-      });
-
-      // Return token (and user info) to the front end
-      return res.status(200).json({
-        message: 'Login successful.',
-        token,
-        user,
-      });
-    } else {
-      // If Z returned a non-200
-      await axios.post(PROJECT_F_URL, {
-        message: `Login attempt failed for ${email} (Z returned status: ${response.status}).`,
-        status: 'error',
-        source: 'Project A',
-      });
-
-      return res.status(response.status).json({
-        error: response.data.error || 'Unknown error from Project Z.',
-      });
-    }
-  } catch (error) {
-    console.error('Login error:', error.message);
-
-    if (error.response) {
-      // Z returned an error
-      await axios.post(PROJECT_F_URL, {
-        message: `Login error for ${req.body.email} (Project Z error).`,
-        status: 'error',
-        source: 'Project A',
-      });
-
-      return res.status(error.response.status).json({
-        error: error.response.data.error || 'Error from Project Z.',
-      });
-    }
-
-    // General server error
-    await axios.post(PROJECT_F_URL, {
-      message: `Login error for ${req.body.email}. Internal server error.`,
-      status: 'error',
-      source: 'Project A',
-    });
-
-    res.status(500).json({ error: 'Login failed due to an internal server error.' });
-  }
 });
 
 // ------------------- FORM SUBMISSION ROUTE ------------------- //
