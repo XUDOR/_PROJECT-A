@@ -1,16 +1,18 @@
-// app.js >> PROJECT A
-
 const express = require('express');
-const axios = require('axios');       // Import axios for HTTP requests
-require('dotenv').config();           // Load environment variables from .env file
-
-console.log('Loaded PORT:', process.env.PORT);
+const axios = require('axios');      
+require('dotenv').config();          
 
 const path = require('path');
-const bodyParser = require('body-parser'); // Middleware for parsing request bodies
-const mainRoutes = require('./routes/mainRoutes'); // Import your routes
+const bodyParser = require('body-parser');
+const mainRoutes = require('./routes/mainRoutes');
 
 const app = express();
+
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    next();
+});
 
 // Define the PORT variable
 const PORT = process.env.PORT || 3001;
@@ -22,8 +24,16 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Use the main routes
-app.use(mainRoutes);
+// Use the main routes with explicit root path
+app.use('/', mainRoutes);
+
+// Debug: Log registered routes
+console.log('Registered Routes:');
+app._router.stack.forEach(function(r){
+    if (r.route && r.route.path){
+        console.log(`${Object.keys(r.route.methods)} ${r.route.path}`);
+    }
+});
 
 // Basic route for serving index.html
 app.get('/', (req, res) => {
@@ -45,5 +55,5 @@ const notifyProjectF = async () => {
 // Start the server
 app.listen(PORT, () => {
     console.log(`Project A is running on http://localhost:${PORT}`);
-    notifyProjectF();  // Call the notification function here
+    notifyProjectF();
 });
