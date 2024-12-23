@@ -4,6 +4,7 @@ require('dotenv').config();
 const path = require('path');
 const bodyParser = require('body-parser');
 const mainRoutes = require('./routes/mainRoutes');
+const authRoutes = require('./middleware/apiAuth');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
@@ -24,7 +25,10 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/', mainRoutes);
+app.use('/api', mainRoutes); // Will handle /api/* except auth
+app.use('/api/auth', authRoutes); // Will handle auth routes
+
+
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'));
