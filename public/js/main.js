@@ -313,91 +313,182 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ========== PROFILE FORM SUBMISSION (/api/users) ==========
-    if (form) {
-        form.addEventListener('submit', async function (e) {
-            e.preventDefault();
+if (form) {
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        console.log('Form submission started');
 
-            const formData = new FormData(form);
-            const user = {
-                name: formData.get('name'),
-                email: formData.get('email'),
-                phone: formData.get('phone'),
-                address: formData.get('address'),
-                location: formData.get('location'),
-                skills: formData.get('skills') ? formData.get('skills').split(',') : [],
-                profile_summary: formData.get('profile_summary'),
-            };
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        if (!token) {
+            responseDiv.textContent = 'Please log in to submit your profile.';
+            responseDiv.style.color = 'red';
+            console.log('Submission blocked: No auth token found');
+            return;
+        }
 
+        const formData = new FormData(form);
+        const user = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            address: formData.get('address'),
+            location: formData.get('location'),
+            skills: formData.get('skills') ? formData.get('skills').split(',') : [],
+            profile_summary: formData.get('profile_summary'),
+        };
+
+        console.log('Submitting user data:', user);
+
+        try {
+            showLoading();
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Add token to headers
+                },
+                body: JSON.stringify(user),
+            });
+
+            console.log('Response status:', response.status);
+            
+            // Log raw response for debugging
+            const rawResponse = await response.text();
+            console.log('Raw response:', rawResponse);
+
+            let result;
             try {
-                showLoading();
-                const response = await fetch('/api/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(user),
-                });
-
-                const result = await response.json();
-                hideLoading();
-
-                if (response.ok) {
-                    responseDiv.textContent = 'User submitted successfully!';
-                    responseDiv.style.color = 'green';
-                    
-                    // Update account status
-                    const statusDiv = document.createElement('div');
-                    statusDiv.classList.add('bundle-row');
-                    statusDiv.innerHTML = `
-                        <div class="bundle-content">
-                            Profile updated for ${user.name}
-                            <div class="bundle-timestamp">
-                                <span class="timestamp-label">Updated:</span>
-                                <span class="timestamp-value">${new Date().toLocaleString()}</span>
-                            </div>
-                        </div>
-                    `;
-                    accountStatusDiv.innerHTML = '';
-                    accountStatusDiv.appendChild(statusDiv);
-                    
-                    form.reset();
-                } else {
-                    responseDiv.textContent = `Error: ${result.error}`;
-                    responseDiv.style.color = 'red';
-                }
-            } catch (error) {
-                hideLoading();
-                responseDiv.textContent = 'Failed to submit user.';
-                responseDiv.style.color = 'red';
-                console.error('Error:', error.message);
+                // Try to parse the response as JSON
+                result = JSON.parse(rawResponse);
+            } catch (parseError) {
+                console.error('Failed to parse response as JSON:', parseError);
+                throw new Error('Invalid response format from server');
             }
-        });
-    }
 
-    // ========== CHECK AND RESTORE LOGIN STATE ==========
-    function checkLoginState() {
+            hideLoading();
+
+            if (response.ok) {
+                console.log('Submission successful:', result);
+                responseDiv.textContent = 'User submitted successfully!';
+                responseDiv.style.color = 'green';
+                
+                // Update account status
+                const statusDiv = document.createElement('div');
+                statusDiv.classList.add('bundle-row');
+                statusDiv.innerHTML = `
+                    <div class="bundle-content">
+                        Profile updated for ${user.name}
+                        <div class="bundle-timestamp">
+                            <span class="timestamp-label">Updated:</span>
+                            <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+                accountStatusDiv.innerHTML = '';
+                accountStatusDiv.appendChild(statusDiv);
+                
+                form.reset();
+            } else {
+                console.error('Submission failed:', result);
+                responseDiv.textContent = `Error: ${result.error || 'Unknown error occurred'}`;
+                responseDiv.style.color = 'red';
+            }
+        } catch (error) {
+            hideLoading();
+            console.error('Submission error:', error);
+            responseDiv.textContent = `Failed to submit user: ${error.message}`;
+            responseDiv.style.color = 'red';
+
+            // Additional error details
+            if (error.response) {
+                console.error('Error response:', {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    headers: Object.fromEntries(error.response.headers.entries())
+                });
+            }
+        }
+    });
+}
+// ========== CHECK AND RESTORE LOGIN STATE ==========
+function checkLoginState() {
+    try {
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user') || 'null');
 
         if (token && user) {
+            // Update UI elements
             userName.textContent = `Welcome, ${user.username}`;
             loginForm.style.display = 'none';
             userInfo.style.display = 'flex';
             
-            // Update account status
+            // Update account status with enhanced styling
             const statusDiv = document.createElement('div');
             statusDiv.classList.add('bundle-row');
             statusDiv.innerHTML = `
                 <div class="bundle-content">
-                    Session restored for ${user.username}
+                    <span style="color: #0AAAC3; font-weight: bold;">Active Session</span>
+                    <div>User: ${user.username}</div>
                     <div class="bundle-timestamp">
-                        <span class="timestamp-label">Time:</span>
+                        <span class="timestamp-label">Session Started:</span>
                         <span class="timestamp-value">${new Date().toLocaleString()}</span>
                     </div>
                 </div>
             `;
             accountStatusDiv.innerHTML = '';
             accountStatusDiv.appendChild(statusDiv);
+
+            // [NEW] Notify Project F about session restoration
+            fetch('/api/notify', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    message: `Session restored for ${user.username}`,
+                    status: 'info',
+                    source: 'Project A',
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(error => console.error('Failed to notify Project F:', error));
+
+        } else {
+            // [NEW] Clear UI state if no valid session
+            userName.textContent = '';
+            loginForm.style.display = 'flex';
+            userInfo.style.display = 'none';
+            accountStatusDiv.innerHTML = `
+                <div class="bundle-row">
+                    <div class="bundle-content" style="color: #C6D000;">
+                        No active session
+                        <div class="bundle-timestamp">
+                            <span class="timestamp-label">Checked:</span>
+                            <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
+    } catch (error) {
+        console.error('Error checking login state:', error);
+        // [NEW] Handle corrupted storage data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        accountStatusDiv.innerHTML = `
+            <div class="bundle-row">
+                <div class="bundle-content" style="color: #ff4d4d;">
+                    Session error occurred
+                    <div class="bundle-timestamp">
+                        <span class="timestamp-label">Time:</span>
+                        <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+        `;
     }
+}
 
     // Check login state on page load
     checkLoginState();

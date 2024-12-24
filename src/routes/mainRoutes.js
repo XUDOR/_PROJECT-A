@@ -234,43 +234,102 @@ router.post('/api/auth/login', async (req, res) => {
 // Protect this route using JWT
 router.post('/api/users', authenticateToken, async (req, res) => {
   try {
+    // [NEW] Enhanced authentication check
+    if (!req.user) {
+      await axios.post(PROJECT_F_URL, {
+        message: `Unauthorized profile submission attempt`,
+        status: 'error',
+        source: 'Project A',
+        timestamp: new Date().toISOString()
+      });
+      return res.status(401).json({ error: 'Unauthorized. Please log in to submit your profile.' });
+    }
+
     const { name, email, phone, address, location, skills, profile_summary } = req.body;
+    
+    // [NEW] Enhanced validation checks
+    if (!name || !email || !phone || !address || !location) {
+      await axios.post(PROJECT_F_URL, {
+        message: `Profile submission failed: Missing required fields for user ${email}`,
+        status: 'error',
+        source: 'Project A',
+        timestamp: new Date().toISOString()
+      });
+      return res.status(400).json({ error: 'All required fields must be filled.' });
+    }
+
+    // [NEW] Email validation
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      await axios.post(PROJECT_F_URL, {
+        message: `Profile submission failed: Invalid email format for user ${email}`,
+        status: 'error',
+        source: 'Project A',
+        timestamp: new Date().toISOString()
+      });
+      return res.status(400).json({ error: 'Invalid email format.' });
+    }
+
     console.log('Received data:', req.body);
 
-    // Forward the request to Project B
+    // [NEW] Enhanced data forwarding to Project B
     const response = await axios.post(PROJECT_B_URL, {
       name,
       email,
       phone,
       address,
       location,
-      skills,
+      skills: Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim()),
       profile_summary,
+      userId: req.user.id, // Add user ID from token
+      lastUpdated: new Date().toISOString()
     });
 
     console.log('Response from Project B:', response.data);
 
-    // If success, notify F
+    // [NEW] Enhanced success notification to F
     await axios.post(PROJECT_F_URL, {
       message: `Database submission success for user ${name} (${email}).`,
       status: 'success',
       source: 'Project A',
+      timestamp: new Date().toISOString(),
+      details: {
+        userId: req.user.id,
+        email,
+        location,
+        skills: Array.isArray(skills) ? skills.join(', ') : skills,
+        actionType: 'profile_update'
+      }
     });
 
-    // Return the response from Project B
-    res.status(200).json(response.data);
+    // [NEW] Enhanced success response
+    res.status(200).json({
+      status: 'success',
+      message: 'Profile updated successfully',
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
-    console.error('Error forwarding data to Project B:', error.message);
+    console.error('Error processing profile submission:', error.message);
 
-    // If fail, notify F
+    // [NEW] Enhanced error notification to F
     await axios.post(PROJECT_F_URL, {
       message: `Database submission error for user ${req.body?.name} (${req.body?.email}).`,
       status: 'error',
       source: 'Project A',
-      details: error.message,
+      timestamp: new Date().toISOString(),
+      details: {
+        error: error.message,
+        userId: req.user?.id,
+        attemptedAction: 'profile_update',
+        errorCode: error.response?.status || 500
+      }
     });
 
-    res.status(500).json({ error: 'Failed to forward data to Project B.' });
+    res.status(500).json({ 
+      error: 'Failed to forward data to Project B.',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
