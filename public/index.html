@@ -20,13 +20,17 @@
                 <li class="auth-section">
                     <div id="login-form" class="auth-form">
                         <input type="email" id="login-email" placeholder="Email" required>
-                        <input type="password" id="login-password" placeholder="Password" required>
+                        <div class="password-fields">
+                            <input type="password" id="login-password" placeholder="Password" required/>
+                            <!-- Single toggle button for login password -->
+                            <button type="button" id="toggle-login-password">View</button>
+                        </div>
                         <button id="login-btn">Login</button>
                         <a href="#" id="show-signup">Create Account</a>
                     </div>
                     <div id="user-info" class="auth-info" style="display: none;">
                         <span id="user-name"></span>
-                        <button id="logout-btn">Logout</button>
+                        <button id="logout-btn" class="Button-Refresh">Logout</button>
                     </div>
                 </li>
             </ul>
@@ -126,6 +130,16 @@
     <!-- Feedback div for success/error messages -->
     <div id="signup-response" style="margin-top: 1em;"></div>
   </div>
+
+
+  <!-- Add this after your other grid items -->
+<div class="grid-item">
+    <h2>Account Status</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>Recent Activity</div>
+    </div>
+    <div id="account-status" class="DBContents">No recent account activity.</div>
+</div>
   
   
         </div>

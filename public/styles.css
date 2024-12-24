@@ -226,6 +226,29 @@ button:hover {
   color: #20232A;
 }
 
+.user-display {
+  color: #0AAAC3;
+  font-weight: bold;
+  margin-right: 1rem;
+}
+
+.password-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#toggle-login-password {
+  padding: 0.4rem;
+  height: fit-content;
+}
+
+
+
+
+
+
+
 /* =============================== */
 /* CREATE ACCOUNT SECTION STYLES  */
 /* =============================== */

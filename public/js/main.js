@@ -10,11 +10,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const logoutBtn = document.getElementById('logout-btn');
 
     // ====================================
-    // Single Toggle for Both Password Fields
+    // Password Fields and Toggles
     // ====================================
     const passwordField = document.getElementById('signup-password');
     const confirmPasswordField = document.getElementById('signup-confirm-password');
     const togglePasswordButton = document.getElementById('toggle-password');
+    const loginPasswordField = document.getElementById('login-password');
+    const toggleLoginPasswordButton = document.getElementById('toggle-login-password');
+    const accountStatusDiv = document.getElementById('account-status');
 
     // ====================================
     // Navigation & Loading Elements
@@ -34,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Signup Form & Response
     // ====================================
     const signupForm = document.getElementById('signup-form');
-    const signupResponseDiv = document.getElementById('signup-response');  // For success/error messages
+    const signupResponseDiv = document.getElementById('signup-response');
 
     // ========== AUTH EVENT LISTENERS ==========
 
@@ -52,10 +55,18 @@ document.addEventListener('DOMContentLoaded', function () {
         loginForm.style.display = 'flex';
         userInfo.style.display = 'none';
         signupSection.style.display = 'none';
+        // Clear account status on logout
+        accountStatusDiv.innerHTML = 'No recent account activity.';
+    });
+
+    // ========== LOGIN PASSWORD TOGGLE ==========
+    toggleLoginPasswordButton.addEventListener('click', () => {
+        const currentType = loginPasswordField.type;
+        loginPasswordField.type = currentType === 'password' ? 'text' : 'password';
+        toggleLoginPasswordButton.textContent = currentType === 'password' ? 'Hide' : 'View';
     });
 
     // ========== SIGNUP FORM SUBMISSION ==========
-
     signupForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -82,18 +93,13 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             showLoading();
 
-
-            // Add the console.log here, right before the fetch call
             console.log('Sending signup data:', {
                 username,
                 name,
                 email,
-                password: '***', // Don't log actual password
+                password: '***',
                 accountType
             });
-
-
-
 
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
@@ -115,9 +121,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Show success
                 signupResponseDiv.textContent = 'Account created successfully!';
                 signupResponseDiv.style.color = 'green';
-                signupForm.reset();
+                
+                // Update account status
+                const statusDiv = document.createElement('div');
+                statusDiv.classList.add('bundle-row');
+                statusDiv.innerHTML = `
+                    <div class="bundle-content">
+                        Account created for ${username}
+                        <div class="bundle-timestamp">
+                            <span class="timestamp-label">Created:</span>
+                            <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+                accountStatusDiv.innerHTML = '';
+                accountStatusDiv.appendChild(statusDiv);
 
-                // Optionally hide the signup section or switch back to login
+                signupForm.reset();
+                // Hide signup, show login
                 signupSection.style.display = 'none';
                 loginForm.style.display = 'flex';
             } else {
@@ -132,17 +153,90 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ========== SINGLE PASSWORD TOGGLE FOR BOTH FIELDS ==========
-    togglePasswordButton.addEventListener('click', () => {
-        // Check the current type of the password field.
-        const currentType = passwordField.type; // 'password' or 'text'
-        const isPasswordType = (currentType === 'password');
+    // ========== LOGIN FORM SUBMISSION ==========
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('login-email').value;
+        const password = loginPasswordField.value;
 
-        // Toggle BOTH fields to the same type.
+        try {
+            showLoading();
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+            hideLoading();
+
+            if (response.ok) {
+                // Store auth data
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user));
+
+                // Update UI
+                userName.textContent = `Welcome, ${result.user.username}`;
+                loginForm.style.display = 'none';
+                userInfo.style.display = 'flex';
+
+                // Update account status
+                const statusDiv = document.createElement('div');
+                statusDiv.classList.add('bundle-row');
+                statusDiv.innerHTML = `
+                    <div class="bundle-content">
+                        Successful login for ${result.user.username}
+                        <div class="bundle-timestamp">
+                            <span class="timestamp-label">Login Time:</span>
+                            <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+                accountStatusDiv.innerHTML = '';
+                accountStatusDiv.appendChild(statusDiv);
+            } else {
+                const errorDiv = document.createElement('div');
+                errorDiv.classList.add('bundle-row');
+                errorDiv.innerHTML = `
+                    <div class="bundle-content" style="color: #ff4d4d;">
+                        Login failed: ${result.error}
+                        <div class="bundle-timestamp">
+                            <span class="timestamp-label">Time:</span>
+                            <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+                accountStatusDiv.innerHTML = '';
+                accountStatusDiv.appendChild(errorDiv);
+            }
+        } catch (error) {
+            hideLoading();
+            console.error('Login error:', error);
+            const errorDiv = document.createElement('div');
+            errorDiv.classList.add('bundle-row');
+            errorDiv.innerHTML = `
+                <div class="bundle-content" style="color: #ff4d4d;">
+                    Login error: ${error.message}
+                    <div class="bundle-timestamp">
+                        <span class="timestamp-label">Time:</span>
+                        <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+            accountStatusDiv.innerHTML = '';
+            accountStatusDiv.appendChild(errorDiv);
+        }
+    });
+
+    // ========== PASSWORD TOGGLES ==========
+    togglePasswordButton.addEventListener('click', () => {
+        const currentType = passwordField.type;
+        const isPasswordType = (currentType === 'password');
+        
         passwordField.type = isPasswordType ? 'text' : 'password';
         confirmPasswordField.type = isPasswordType ? 'text' : 'password';
-
-        // Update the toggle button’s text accordingly.
+        
         togglePasswordButton.textContent = isPasswordType ? 'Hide' : 'View';
     });
 
@@ -157,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function handleNavigation(section) {
         showLoading();
-        // Simulate API call or page load
         setTimeout(() => {
             hideLoading();
             updateContent(section);
@@ -191,11 +284,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 throw new Error(result.error || 'Failed to fetch jobs');
             }
 
-            jobContainer.innerHTML = ''; // Clear existing content
+            jobContainer.innerHTML = '';
 
-            // Display job data (assuming just one job or adapt for multiple)
             const job = result.data;
-            console.log('Job Data:', job);  // Debug
+            console.log('Job Data:', job);
 
             const jobDiv = document.createElement('div');
             jobDiv.classList.add('job-row');
@@ -250,7 +342,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok) {
                     responseDiv.textContent = 'User submitted successfully!';
                     responseDiv.style.color = 'green';
-                    form.reset(); // Clear the form
+                    
+                    // Update account status
+                    const statusDiv = document.createElement('div');
+                    statusDiv.classList.add('bundle-row');
+                    statusDiv.innerHTML = `
+                        <div class="bundle-content">
+                            Profile updated for ${user.name}
+                            <div class="bundle-timestamp">
+                                <span class="timestamp-label">Updated:</span>
+                                <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `;
+                    accountStatusDiv.innerHTML = '';
+                    accountStatusDiv.appendChild(statusDiv);
+                    
+                    form.reset();
                 } else {
                     responseDiv.textContent = `Error: ${result.error}`;
                     responseDiv.style.color = 'red';
@@ -263,4 +371,34 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // ========== CHECK AND RESTORE LOGIN STATE ==========
+    function checkLoginState() {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+        if (token && user) {
+            userName.textContent = `Welcome, ${user.username}`;
+            loginForm.style.display = 'none';
+            userInfo.style.display = 'flex';
+            
+            // Update account status
+            const statusDiv = document.createElement('div');
+            statusDiv.classList.add('bundle-row');
+            statusDiv.innerHTML = `
+                <div class="bundle-content">
+                    Session restored for ${user.username}
+                    <div class="bundle-timestamp">
+                        <span class="timestamp-label">Time:</span>
+                        <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+            accountStatusDiv.innerHTML = '';
+            accountStatusDiv.appendChild(statusDiv);
+        }
+    }
+
+    // Check login state on page load
+    checkLoginState();
 });
