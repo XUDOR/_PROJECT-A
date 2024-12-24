@@ -25,8 +25,13 @@ router.get('/api/status', (req, res) => {
 });
 
 // ------------------- HEALTHCHECK ------------------- //
-router.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'Project A is up and running' });
+router.get('/health', (req, res) => {
+  res.status(200).json({ 
+      status: 'healthy',
+      message: 'Project A is up and running',
+      timestamp: new Date().toISOString(),
+      service: 'Project A'
+  });
 });
 
 // ------------------- AUTHENTICATION ------------------- //
@@ -39,6 +44,8 @@ router.get('/api/health', (req, res) => {
 router.post('/api/auth/signup', async (req, res) => {
   try {
     const { username, name, email, password, accountType } = req.body;
+    console.log('PROJECT_Z_URL:', process.env.PROJECT_Z_URL); // Add this
+        console.log('Signup payload:', req.body); // Add this too
 
     if (!username || !name || !email || !password || !accountType) {
       return res.status(400).json({ error: 'All fields are required.' });

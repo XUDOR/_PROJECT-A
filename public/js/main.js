@@ -82,6 +82,19 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             showLoading();
 
+
+            // Add the console.log here, right before the fetch call
+            console.log('Sending signup data:', {
+                username,
+                name,
+                email,
+                password: '***', // Don't log actual password
+                accountType
+            });
+
+
+
+
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -124,14 +137,14 @@ document.addEventListener('DOMContentLoaded', function () {
         // Check the current type of the password field.
         const currentType = passwordField.type; // 'password' or 'text'
         const isPasswordType = (currentType === 'password');
-      
+
         // Toggle BOTH fields to the same type.
         passwordField.type = isPasswordType ? 'text' : 'password';
         confirmPasswordField.type = isPasswordType ? 'text' : 'password';
-      
+
         // Update the toggle button’s text accordingly.
         togglePasswordButton.textContent = isPasswordType ? 'Hide' : 'View';
-      });
+    });
 
     // ========== NAVIGATION HANDLING ==========
     navLinks.forEach(link => {
