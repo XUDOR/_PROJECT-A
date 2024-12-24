@@ -178,7 +178,7 @@ button:hover {
 /* Refresh Button */
 .Button-Refresh {
   padding: 5px 10px;
-  border: 2px solid #0AAAC3;
+  border: 1px solid #0AAAC3;
   background-color: transparent;
   color: #0AAAC3;
   cursor: pointer;
@@ -213,7 +213,7 @@ button:hover {
 
 .auth-form button {
   padding: 0.4rem 1rem;
-  border: 2px solid #0AAAC3;
+  border: 1px solid #0AAAC3;
   border-radius: 4px;
   background-color: transparent;
   color: #0AAAC3;
@@ -311,7 +311,7 @@ button:hover {
 /* Style the "View" button for password toggling */
 .password-container button {
   margin-left: auto;           /* Push it to the right end if you like */
-  border: 2px solid #0AAAC3;   /* Match your theme colors */
+  border: 1px solid #0AAAC3;   /* Match your theme colors */
   background-color: transparent;
   color: #0AAAC3;
   cursor: pointer;
