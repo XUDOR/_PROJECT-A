@@ -248,7 +248,13 @@ button:hover {
 
 
 
-
+/* Custom styling for logged-in state */
+.logged-in-style {
+  margin-top: 20px; /* Add some spacing */
+  font-weight: normal; /* Example of dynamic visual change */
+  color: #C6D000; /* Adjust color for emphasis */
+  margin-right: .2em;
+}
 
 
 /* =============================== */

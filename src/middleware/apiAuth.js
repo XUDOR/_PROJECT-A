@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const router = express.Router();
 
+const PROJECT_Z_URL = process.env.PROJECT_Z_URL;
+
 router.post('/signup', async (req, res) => {
     try {
         // Log the incoming request
@@ -41,5 +43,36 @@ router.post('/signup', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            console.log('[Validation Error] Missing email or password.');
+            return res.status(400).json({ error: 'Email and password are required.' });
+        }
+
+        console.log('[Forwarding to Project Z] Email:', email);
+        const response = await axios.post(`${PROJECT_Z_URL}/api/auth/login`, { email, password });
+
+        console.log('[Response from Project Z]:', response.data);
+        res.status(200).json(response.data);
+    } catch (error) {
+        console.error('[Login Error]:', error.message);
+
+        if (error.response) {
+            console.error('[Error Response from Project Z]:', error.response.data);
+            return res.status(error.response.status).json({
+                error: error.response.data.error || 'Error from Project Z.',
+            });
+        }
+
+        res.status(500).json({ error: 'Login failed.' });
+    }
+});
+
+
 
 module.exports = router;
