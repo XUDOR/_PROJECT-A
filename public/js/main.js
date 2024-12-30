@@ -1,7 +1,16 @@
-import { PROJECT_F_NOTIFICATIONS_URL } from './const.js'; // Import the URL from const.js
+document.addEventListener('DOMContentLoaded', async function () {
+    // Fetch the constants from the backend
+    let PROJECT_F_NOTIFICATIONS_URL;
+    try {
+        const response = await fetch('/api/constants');
+        if (!response.ok) throw new Error('Failed to fetch constants');
+        const constants = await response.json();
+        PROJECT_F_NOTIFICATIONS_URL = constants.PROJECT_F_NOTIFICATIONS_URL;
+    } catch (error) {
+        console.error('Error loading constants:', error);
+        return; // Stop execution if constants can't be loaded
+    }
 
-
-document.addEventListener('DOMContentLoaded', function () {
     // ====================================
     // Authentication Elements
     // ====================================
@@ -55,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
     logoutBtn.addEventListener('click', () => {
         const user = JSON.parse(localStorage.getItem('user')); // Retrieve user info from localStorage
         const token = localStorage.getItem('token'); // Retrieve JWT from localStorage
-    
+
         // Notify Project F about logout
         if (user) {
             sendNotificationToF(
@@ -65,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 token
             );
         }
-    
+
         // Clear local storage and reset UI
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -74,10 +83,10 @@ document.addEventListener('DOMContentLoaded', function () {
         signupSection.style.display = 'none';
         accountStatusDiv.innerHTML = 'No recent account activity.';
         userInfo.classList.remove('logged-in-style');
-    
+
         console.log('[LOGOUT] User logged out and UI reset.');
     });
-    
+
 
     // ========== LOGIN PASSWORD TOGGLE ==========
     toggleLoginPasswordButton.addEventListener('click', () => {
@@ -88,59 +97,59 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ========== NOTIFICATION FUNCTION ==========   
 
-async function sendNotificationToF(message, status, source, token) {
-    try {
-        const response = await fetch(PROJECT_F_NOTIFICATIONS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                message,
-                status,
-                source,
-                timestamp: new Date().toISOString()
-            })
-        });
+    async function sendNotificationToF(message, status, source, token) {
+        try {
+            const response = await fetch(PROJECT_F_NOTIFICATIONS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    message,
+                    status,
+                    source,
+                    timestamp: new Date().toISOString()
+                })
+            });
 
-        if (!response.ok) {
-            throw new Error(`Notification failed with status ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`Notification failed with status ${response.status}`);
+            }
+
+            console.log(`[NOTIFICATION SENT]: ${message}`);
+        } catch (error) {
+            console.error('[NOTIFICATION ERROR]:', error.message);
         }
-
-        console.log(`[NOTIFICATION SENT]: ${message}`);
-    } catch (error) {
-        console.error('[NOTIFICATION ERROR]:', error.message);
     }
-}
 
 
     // ========== SIGNUP FORM SUBMISSION ==========
     signupForm.addEventListener('submit', async function (e) {
         e.preventDefault();
-    
+
         const username = document.getElementById('signup-username').value.trim();
         const name = document.getElementById('signup-name').value.trim();
         const email = document.getElementById('signup-email').value.trim();
         const password = passwordField.value;
         const confirmPassword = confirmPasswordField.value;
         const accountType = document.getElementById('account-type').value;
-    
+
         if (!username || !name || !email || !password || !accountType) {
             signupResponseDiv.textContent = 'Please fill in all required fields.';
             signupResponseDiv.style.color = 'red';
             return;
         }
-    
+
         if (password !== confirmPassword) {
             signupResponseDiv.textContent = 'Passwords do not match.';
             signupResponseDiv.style.color = 'red';
             return;
         }
-    
+
         try {
             showLoading();
-    
+
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -152,28 +161,28 @@ async function sendNotificationToF(message, status, source, token) {
                     accountType
                 }),
             });
-    
+
             const result = await response.json();
             hideLoading();
-    
+
             if (response.ok) {
                 signupResponseDiv.textContent = 'Account created successfully!';
                 signupResponseDiv.style.color = 'green';
-    
+
                 sendNotificationToF(
                     `Account created for user: ${username}`,
                     'success',
                     'Project A',
                     null
                 );
-    
+
                 signupForm.reset();
                 signupSection.style.display = 'none';
                 loginForm.style.display = 'flex';
             } else {
                 signupResponseDiv.textContent = `Failed to create account: ${result.error || 'Unknown error'}`;
                 signupResponseDiv.style.color = 'red';
-    
+
                 sendNotificationToF(
                     `Account creation failed for user: ${username}`,
                     'error',
@@ -185,7 +194,7 @@ async function sendNotificationToF(message, status, source, token) {
             hideLoading();
             signupResponseDiv.textContent = 'An unexpected error occurred.';
             signupResponseDiv.style.color = 'red';
-    
+
             sendNotificationToF(
                 `Signup system error for user: ${username}`,
                 'error',
@@ -194,35 +203,35 @@ async function sendNotificationToF(message, status, source, token) {
             );
         }
     });
-    
+
 
     // ========== LOGIN FORM SUBMISSION ==========
     loginForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         console.log('[LOGIN] Login attempt started');
-    
+
         const email = document.getElementById('login-email').value;
         const password = loginPasswordField.value;
-    
+
         try {
             showLoading();
-    
+
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-    
+
             const result = await response.json();
             hideLoading();
-    
+
             if (response.ok) {
                 console.log('[LOGIN] Login successful');
-    
+
                 // Store auth data
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
-    
+
                 // Notify F of successful login
                 sendNotificationToF(
                     `User ${result.user.username} logged in successfully`,
@@ -230,12 +239,12 @@ async function sendNotificationToF(message, status, source, token) {
                     'Project A',
                     result.token
                 );
-    
+
                 // Update UI
                 userName.textContent = `Welcome, ${result.user.username}`;
                 loginForm.style.display = 'none';
                 userInfo.style.display = 'flex';
-    
+
                 // Add logged-in-specific styling
                 userInfo.classList.add('logged-in-style');
             } else {
@@ -253,7 +262,7 @@ async function sendNotificationToF(message, status, source, token) {
                 `;
                 accountStatusDiv.innerHTML = '';
                 accountStatusDiv.appendChild(errorDiv);
-    
+
                 // Notify F of failed login
                 sendNotificationToF(
                     `Login failed for ${email}`,
@@ -278,7 +287,7 @@ async function sendNotificationToF(message, status, source, token) {
             `;
             accountStatusDiv.innerHTML = '';
             accountStatusDiv.appendChild(errorDiv);
-    
+
             // Notify F of system error
             sendNotificationToF(
                 `Login system error for ${email}: ${error.message}`,
@@ -288,7 +297,7 @@ async function sendNotificationToF(message, status, source, token) {
             );
         }
     });
-    
+
 
     // ========== PASSWORD TOGGLES ==========
     togglePasswordButton.addEventListener('click', () => {

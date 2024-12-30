@@ -7,6 +7,7 @@ const mainRoutes = require('./routes/mainRoutes');
 const authRoutes = require('./middleware/apiAuth');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const constants = require('../config/const.js'); // Import constants only once
 
 const app = express();
 
@@ -24,17 +25,21 @@ app.use((req, res, next) => {
     next();
 });
 
+// Expose constants for client use
+app.get('/api/constants', (req, res) => {
+    res.json(constants);
+});
+
 // Routes
 app.use('/api', mainRoutes); // Will handle /api/* except auth
 app.use('/api/auth', authRoutes); // Will handle auth routes
 
-
-
+// Serve index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// Project F notification
+// Notify Project F
 const notifyProjectF = async () => {
     try {
         await axios.post('http://localhost:3006/api/notifications', {
@@ -46,6 +51,7 @@ const notifyProjectF = async () => {
     }
 };
 
+// Start server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Project A is running on http://localhost:${PORT}`);
