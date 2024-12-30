@@ -1,3 +1,6 @@
+import { PROJECT_F_NOTIFICATIONS_URL } from './const.js'; // Import the URL from const.js
+
+
 document.addEventListener('DOMContentLoaded', function () {
     // ====================================
     // Authentication Elements
@@ -50,19 +53,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Logout
     logoutBtn.addEventListener('click', () => {
+        const user = JSON.parse(localStorage.getItem('user')); // Retrieve user info from localStorage
+        const token = localStorage.getItem('token'); // Retrieve JWT from localStorage
+    
+        // Notify Project F about logout
+        if (user) {
+            sendNotificationToF(
+                `User ${user.username} logged out successfully`,
+                'info',
+                'Project A',
+                token
+            );
+        }
+    
+        // Clear local storage and reset UI
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-
-        // Reset UI
         loginForm.style.display = 'flex';
         userInfo.style.display = 'none';
         signupSection.style.display = 'none';
         accountStatusDiv.innerHTML = 'No recent account activity.';
-
-        // Remove logged-in-specific styling
         userInfo.classList.remove('logged-in-style');
+    
+        console.log('[LOGOUT] User logged out and UI reset.');
     });
-
+    
 
     // ========== LOGIN PASSWORD TOGGLE ==========
     toggleLoginPasswordButton.addEventListener('click', () => {
@@ -71,41 +86,61 @@ document.addEventListener('DOMContentLoaded', function () {
         toggleLoginPasswordButton.textContent = currentType === 'password' ? 'Hide' : 'View';
     });
 
+    // ========== NOTIFICATION FUNCTION ==========   
+
+async function sendNotificationToF(message, status, source, token) {
+    try {
+        const response = await fetch(PROJECT_F_NOTIFICATIONS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                message,
+                status,
+                source,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Notification failed with status ${response.status}`);
+        }
+
+        console.log(`[NOTIFICATION SENT]: ${message}`);
+    } catch (error) {
+        console.error('[NOTIFICATION ERROR]:', error.message);
+    }
+}
+
+
     // ========== SIGNUP FORM SUBMISSION ==========
     signupForm.addEventListener('submit', async function (e) {
         e.preventDefault();
-
-        // Collect user input
+    
         const username = document.getElementById('signup-username').value.trim();
         const name = document.getElementById('signup-name').value.trim();
         const email = document.getElementById('signup-email').value.trim();
         const password = passwordField.value;
         const confirmPassword = confirmPasswordField.value;
         const accountType = document.getElementById('account-type').value;
-
-        // Basic validation
+    
         if (!username || !name || !email || !password || !accountType) {
             signupResponseDiv.textContent = 'Please fill in all required fields.';
             signupResponseDiv.style.color = 'red';
             return;
         }
+    
         if (password !== confirmPassword) {
             signupResponseDiv.textContent = 'Passwords do not match.';
             signupResponseDiv.style.color = 'red';
             return;
         }
-
+    
         try {
             showLoading();
-
-            console.log('Sending signup data:', {
-                username,
-                name,
-                email,
-                password: '***',
-                accountType
-            });
-
+    
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -117,158 +152,115 @@ document.addEventListener('DOMContentLoaded', function () {
                     accountType
                 }),
             });
-
+    
             const result = await response.json();
-
             hideLoading();
-
+    
             if (response.ok) {
-                // Show success
                 signupResponseDiv.textContent = 'Account created successfully!';
                 signupResponseDiv.style.color = 'green';
-
-                // Update account status
-                const statusDiv = document.createElement('div');
-                statusDiv.classList.add('bundle-row');
-                statusDiv.innerHTML = `
-                    <div class="bundle-content">
-                        Account created for ${username}
-                        <div class="bundle-timestamp">
-                            <span class="timestamp-label">Created:</span>
-                            <span class="timestamp-value">${new Date().toLocaleString()}</span>
-                        </div>
-                    </div>
-                `;
-                accountStatusDiv.innerHTML = '';
-                accountStatusDiv.appendChild(statusDiv);
-
+    
+                sendNotificationToF(
+                    `Account created for user: ${username}`,
+                    'success',
+                    'Project A',
+                    null
+                );
+    
                 signupForm.reset();
-                // Hide signup, show login
                 signupSection.style.display = 'none';
                 loginForm.style.display = 'flex';
             } else {
                 signupResponseDiv.textContent = `Failed to create account: ${result.error || 'Unknown error'}`;
                 signupResponseDiv.style.color = 'red';
+    
+                sendNotificationToF(
+                    `Account creation failed for user: ${username}`,
+                    'error',
+                    'Project A',
+                    null
+                );
             }
         } catch (error) {
             hideLoading();
-            console.error('Signup error:', error.message);
             signupResponseDiv.textContent = 'An unexpected error occurred.';
             signupResponseDiv.style.color = 'red';
+    
+            sendNotificationToF(
+                `Signup system error for user: ${username}`,
+                'error',
+                'Project A',
+                null
+            );
         }
     });
+    
 
     // ========== LOGIN FORM SUBMISSION ==========
     loginForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         console.log('[LOGIN] Login attempt started');
-
+    
         const email = document.getElementById('login-email').value;
         const password = loginPasswordField.value;
-
-        console.log('=== LOGIN ATTEMPT START ===');
-        console.log('Email:', email);
-
+    
         try {
             showLoading();
-            // Notify F that login attempt started
-            await fetch('/api/notify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: `Login attempt initiated for ${email}`,
-                    status: 'info',
-                    source: 'Project A',
-                    timestamp: new Date().toISOString()
-                })
-            });
-
+    
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-
+    
             const result = await response.json();
             hideLoading();
-
+    
             if (response.ok) {
                 console.log('[LOGIN] Login successful');
+    
                 // Store auth data
                 localStorage.setItem('token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user));
-
+    
+                // Notify F of successful login
+                sendNotificationToF(
+                    `User ${result.user.username} logged in successfully`,
+                    'success',
+                    'Project A',
+                    result.token
+                );
+    
                 // Update UI
                 userName.textContent = `Welcome, ${result.user.username}`;
                 loginForm.style.display = 'none';
                 userInfo.style.display = 'flex';
-
+    
                 // Add logged-in-specific styling
                 userInfo.classList.add('logged-in-style');
-
-                // Update account status
-                const statusDiv = document.createElement('div');
-                statusDiv.classList.add('bundle-row');
-                statusDiv.innerHTML = `
-                <div class="bundle-content">
-                    <span style="color: #0AAAC3; font-weight: bold;">Login Successful</span>
-                    <div>User: ${result.user.username}</div>
-                    <div class="bundle-timestamp">
-                        <span class="timestamp-label">Login Time:</span>
-                        <span class="timestamp-value">${new Date().toLocaleString()}</span>
-                    </div>
-                </div>
-            `;
-                accountStatusDiv.innerHTML = '';
-                accountStatusDiv.appendChild(statusDiv);
-
-                // Notify F of successful login
-                await fetch('/api/notify', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${result.token}`
-                    },
-                    body: JSON.stringify({
-                        message: `Login successful for ${result.user.username}`,
-                        status: 'success',
-                        source: 'Project A',
-                        details: {
-                            username: result.user.username,
-                            timestamp: new Date().toISOString()
-                        }
-                    })
-                });
             } else {
-                console.log('[LOGIN] Login failed:', result.error);
+                console.error('[LOGIN] Login failed:', result.error);
                 const errorDiv = document.createElement('div');
                 errorDiv.classList.add('bundle-row');
                 errorDiv.innerHTML = `
-                <div class="bundle-content" style="color: #ff4d4d;">
-                    Login failed: ${result.error}
-                    <div class="bundle-timestamp">
-                        <span class="timestamp-label">Time:</span>
-                        <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                    <div class="bundle-content" style="color: #ff4d4d;">
+                        Login failed: ${result.error}
+                        <div class="bundle-timestamp">
+                            <span class="timestamp-label">Time:</span>
+                            <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
                 accountStatusDiv.innerHTML = '';
                 accountStatusDiv.appendChild(errorDiv);
-
+    
                 // Notify F of failed login
-                await fetch('/api/notify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: `Login failed for ${email}`,
-                        status: 'error',
-                        source: 'Project A',
-                        details: {
-                            error: result.error,
-                            timestamp: new Date().toISOString()
-                        }
-                    })
-                });
+                sendNotificationToF(
+                    `Login failed for ${email}`,
+                    'error',
+                    'Project A',
+                    null // No token in this case
+                );
             }
         } catch (error) {
             hideLoading();
@@ -276,33 +268,27 @@ document.addEventListener('DOMContentLoaded', function () {
             const errorDiv = document.createElement('div');
             errorDiv.classList.add('bundle-row');
             errorDiv.innerHTML = `
-            <div class="bundle-content" style="color: #ff4d4d;">
-                Login error: ${error.message}
-                <div class="bundle-timestamp">
-                    <span class="timestamp-label">Time:</span>
-                    <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                <div class="bundle-content" style="color: #ff4d4d;">
+                    Login error: ${error.message}
+                    <div class="bundle-timestamp">
+                        <span class="timestamp-label">Time:</span>
+                        <span class="timestamp-value">${new Date().toLocaleString()}</span>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
             accountStatusDiv.innerHTML = '';
             accountStatusDiv.appendChild(errorDiv);
-
-            // Notify F of error
-            await fetch('/api/notify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: `Login system error for ${email}`,
-                    status: 'error',
-                    source: 'Project A',
-                    details: {
-                        error: error.message,
-                        timestamp: new Date().toISOString()
-                    }
-                })
-            });
+    
+            // Notify F of system error
+            sendNotificationToF(
+                `Login system error for ${email}: ${error.message}`,
+                'error',
+                'Project A',
+                null
+            );
         }
     });
+    
 
     // ========== PASSWORD TOGGLES ==========
     togglePasswordButton.addEventListener('click', () => {
