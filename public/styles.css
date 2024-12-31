@@ -179,6 +179,8 @@ button:hover {
 
 /* Refresh Button */
 .Button-Refresh {
+  margin-left: .5em;
+  margin-bottom: .3em;
   padding: 5px 10px;
   border: 1px solid #0AAAC3;
   background-color: transparent;
