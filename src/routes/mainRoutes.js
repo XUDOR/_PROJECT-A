@@ -232,7 +232,7 @@ router.post('/api/auth/login', async (req, res) => {
 
 // ------------------- FORM SUBMISSION ROUTE ------------------- //
 // Protect this route using JWT
-router.post('/api/users', authenticateToken, async (req, res) => {
+router.post('/users', authenticateToken, async (req, res) => {
   try {
     // [NEW] Enhanced authentication check
     if (!req.user) {
