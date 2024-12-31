@@ -1,15 +1,16 @@
 document.addEventListener('DOMContentLoaded', async function () {
     // Fetch the constants from the backend
     let PROJECT_F_NOTIFICATIONS_URL;
-    try {
-        const response = await fetch('/api/constants');
-        if (!response.ok) throw new Error('Failed to fetch constants');
-        const constants = await response.json();
-        PROJECT_F_NOTIFICATIONS_URL = constants.PROJECT_F_NOTIFICATIONS_URL;
-    } catch (error) {
-        console.error('Error loading constants:', error);
-        return; // Stop execution if constants can't be loaded
-    }
+try {
+    const response = await fetch('/api/constants');
+    if (!response.ok) throw new Error('Failed to fetch constants');
+    const constants = await response.json();
+    PROJECT_F_NOTIFICATIONS_URL = constants.PROJECT_F_NOTIFICATIONS_URL;
+} catch (error) {
+    console.error('Error loading constants:', error);
+    return; // Stop execution if constants can't be loaded
+}
+
 
     // ====================================
     // Authentication Elements

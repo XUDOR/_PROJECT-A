@@ -27,8 +27,12 @@ app.use((req, res, next) => {
 
 // Expose constants for client use
 app.get('/api/constants', (req, res) => {
-    res.json(constants);
+    res.json({
+        PROJECT_F_NOTIFICATIONS_URL: constants.PROJECT_F_URL,
+        // Add other constants explicitly here if needed
+    });
 });
+
 
 // Routes
 app.use('/api', mainRoutes); // Will handle /api/* except auth
@@ -50,6 +54,26 @@ const notifyProjectF = async () => {
         console.error('Failed to notify Project F:', error.message);
     }
 };
+
+
+// Add a new POST route for /api/notify
+app.post('/api/notify', (req, res) => {
+    const { message, status, source, timestamp } = req.body;
+
+    // Log the notification details (or handle them as needed)
+    console.log(`[NOTIFICATION RECEIVED]`, {
+        message,
+        status,
+        source,
+        timestamp
+    });
+
+    // Respond back with success
+    res.status(200).json({ message: 'Notification received successfully' });
+});
+
+
+
 
 // Start server
 const PORT = process.env.PORT || 3001;
