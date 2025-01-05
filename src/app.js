@@ -19,6 +19,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
+
+
+// Routes
+app.use('/api', mainRoutes); // Will handle /api/* except auth
+app.use('/api/auth', authRoutes); // Will handle auth routes
+
+
+
 // Request logging
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
@@ -34,9 +42,7 @@ app.get('/api/constants', (req, res) => {
 });
 
 
-// Routes
-app.use('/api', mainRoutes); // Will handle /api/* except auth
-app.use('/api/auth', authRoutes); // Will handle auth routes
+
 
 // Serve index.html
 app.get('/', (req, res) => {
