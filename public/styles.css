@@ -53,6 +53,12 @@ h1 {
 }
 
 /* Main content styles */
+
+
+.titleTag {
+  font-weight: lighter;
+}
+
 main {
   flex: 1;
   padding: 2rem;
