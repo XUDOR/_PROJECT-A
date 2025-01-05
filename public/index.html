@@ -27,7 +27,7 @@
                         <button type="submit" id="login-btn">Login</button>
                         <a href="#" id="show-signup">Create Account</a>
                     </form>
-                    
+
                     <div id="user-info" class="auth-info" style="display: none;">
                         <span id="user-name"></span>
                         <button id="logout-btn" class="Button-Refresh">Logout</button>
@@ -87,61 +87,77 @@
 
             <!-- Grid Item 4: Signup Section -->
             <!-- In your /public/index.html signup section -->
-<div class="grid-item signup-section" id="signup-section" style="display: none;">
-    <h2>Create Account</h2>
-    <form id="signup-form" class="auth-form">
-      <input type="text" id="signup-username" placeholder="Username" required>
-      <input type="text" id="signup-name" placeholder="Full Name" required>
-      <input type="email" id="signup-email" placeholder="Email" required>
-  
-      <!-- Passwords Container -->
-      <!-- In your signup form -->
-<div class="password-fields">
-    <!-- Just like your other inputs -->
-    <input
-      type="password"
-      id="signup-password"
-      placeholder="Password"
-      required
-    />
-    
-    <input
-      type="password"
-      id="signup-confirm-password"
-      placeholder="Confirm Password"
-      required
-    />
-  
-    <!-- Single toggle button for both fields -->
-    <button type="button" id="toggle-password">View</button>
-  </div>
-  
-      
-  
-      <select id="account-type" required>
-        <option value="">Select Account Type</option>
-        <option value="user">Job Seeker</option>
-        <option value="company">Company</option>
-      </select>
-  
-      <button type="submit">Create Account</button>
-    </form>
-  
-    <!-- Feedback div for success/error messages -->
-    <div id="signup-response" style="margin-top: 1em;"></div>
-  </div>
+            <div class="grid-item signup-section" id="signup-section" style="display: none;">
+                <h2>Create Account</h2>
+                <form id="signup-form" class="auth-form">
+                    <input type="text" id="signup-username" placeholder="Username" required>
+                    <input type="text" id="signup-name" placeholder="Full Name" required>
+                    <input type="email" id="signup-email" placeholder="Email" required>
+
+                    <!-- Passwords Container -->
+                    <!-- In your signup form -->
+                    <div class="password-fields">
+                        <!-- Just like your other inputs -->
+                        <input type="password" id="signup-password" placeholder="Password" required />
+
+                        <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required />
+
+                        <!-- Single toggle button for both fields -->
+                        <button type="button" id="toggle-password">View</button>
+                    </div>
 
 
-  <!-- Add this after your other grid items -->
-<div class="grid-item">
-    <h2>Account Status</h2>
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>Recent Activity</div>
-    </div>
-    <div id="account-status" class="DBContents">No recent account activity.</div>
-</div>
-  
-  
+
+                    <select id="account-type" required>
+                        <option value="">Select Account Type</option>
+                        <option value="user">Job Seeker</option>
+                        <option value="company">Company</option>
+                    </select>
+
+                    <button type="submit">Create Account</button>
+                </form>
+
+                <!-- Feedback div for success/error messages -->
+                <div id="signup-response" style="margin-top: 1em;"></div>
+            </div>
+
+
+            <!-- ACCOUNT STATUS -->
+            <div class="grid-item">
+                <h2>Account Status</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>Recent Activity</div>
+                </div>
+                <div id="account-status" class="DBContents">No recent account activity.</div>
+            </div>
+
+
+            <!-- RESUME UPLOAD -->
+
+            <div class="grid-item">
+                <h2>Upload Resume</h2>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <input type="file" id="resume-file" name="resume" accept=".pdf,.docx" required>
+                    <button type="submit">Upload</button>
+                </form>
+                <div id="upload-response"></div>
+            </div>
+
+
+            <!-- RESUME LIST -->
+
+            <div class="grid-item">
+                <h2>Uploaded Resumes</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>Recent Uploads</div>
+                    <button id="refresh-resumes-btn" class="Button-Refresh">Refresh</button>
+                </div>
+                <div id="resumes-container" class="DBContents">
+                    No resumes uploaded yet.
+                </div>
+            </div>
+
+
         </div>
     </main>
 

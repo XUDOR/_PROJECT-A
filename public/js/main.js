@@ -482,6 +482,87 @@ try {
             }
         });
     }
+
+
+ // ========== UPLOAD resume ==========
+
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        const fileInput = document.getElementById('resume-file');
+        
+        formData.append('resume', fileInput.files[0]);
+        
+        try {
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+      
+          const result = await response.json();
+          const uploadResponse = document.getElementById('upload-response');
+      
+          if (response.ok) {
+            uploadResponse.textContent = 'File uploaded successfully!';
+            uploadResponse.style.color = 'green';
+          } else {
+            uploadResponse.textContent = `Error: ${result.error}`;
+            uploadResponse.style.color = 'red';
+          }
+        } catch (error) {
+          console.error('Upload failed:', error);
+        }
+      });
+      
+
+
+
+
+
+// --------------- Resume display functionality+++++++++++++++++++
+
+
+const resumesContainer = document.getElementById('resumes-container');
+const refreshResumesButton = document.getElementById('refresh-resumes-btn');
+
+async function displayResumes() {
+  try {
+    const response = await fetch('/api/resumes');
+    const result = await response.json();
+    
+    if (response.ok && result.files) {
+      resumesContainer.innerHTML = '';
+      
+      result.files.forEach(file => {
+        const resumeDiv = document.createElement('div');
+        resumeDiv.classList.add('resume-row');
+        resumeDiv.innerHTML = `
+          <div class="bundle-content">
+            <strong>${file.originalname}</strong>
+            <div class="file-details">
+              <span>Size: ${(file.size / 1024).toFixed(2)} KB</span>
+              <span>Type: ${file.mimetype}</span>
+              <span>Uploaded: ${new Date(file.uploadDate).toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+        resumesContainer.appendChild(resumeDiv);
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching resumes:', error);
+    resumesContainer.innerHTML = 'Failed to load resumes.';
+  }
+}
+
+if (refreshResumesButton) {
+  refreshResumesButton.addEventListener('click', displayResumes);
+}
+
+
+
+
+
     // ========== CHECK AND RESTORE LOGIN STATE ==========
     function checkLoginState() {
         try {

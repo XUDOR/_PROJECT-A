@@ -346,6 +346,24 @@ button:hover {
   max-width: 100%;
 }
 
+/* Resume -list */
+
+.resume-row {
+  border: 1px solid #4F8FBA;
+  background-color: #444340;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+}
+
+.file-details {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  color: #C1E0E0;
+  font-size: 0.9em;
+}
+
 
 
 

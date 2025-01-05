@@ -3,6 +3,30 @@
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+
+const fs = require('fs').promises;
+const path = require('path');
+
+// multer configuration:
+
+const upload = multer({
+  dest: 'uploads/',
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf' || 
+        file.mimetype === 'application/msword' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF and DOCX files are allowed.'));
+    }
+  }
+});
+
+
 
 // Import constants
 const { PROJECT_B_URL, PROJECT_F_URL } = require('../../config/const');
@@ -12,6 +36,8 @@ const PROJECT_Z_URL = process.env.PROJECT_Z_URL;
 
 // JWT authentication middleware
 const authenticateToken = require('../middleware/authenticateToken');
+
+
 
 const router = express.Router();
 
@@ -332,6 +358,70 @@ router.post('/users', authenticateToken, async (req, res) => {
     });
   }
 });
+
+// ------------------- UPLOAD resume route ------------------- //
+// --------------------FORWARD =>> THE PROJECT E-PARSER ------------------- //
+
+router.post('/api/upload', upload.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Notify Project F about successful upload
+    await axios.post(PROJECT_F_URL, {
+      message: `Resume uploaded: ${req.file.originalname}`,
+      status: 'success',
+      source: 'Project A'
+    });
+
+    res.json({
+      message: 'File uploaded successfully',
+      file: {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      }
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      error: 'File upload failed',
+      details: error.message 
+    });
+  }
+});
+
+
+// ====================  resume route 
+router.get('/api/resumes', async (req, res) => {
+  try {
+    const uploadDir = path.join(__dirname, '../../uploads');
+    const files = await fs.readdir(uploadDir);
+    
+    const fileDetails = await Promise.all(files.map(async file => {
+      const filePath = path.join(uploadDir, file);
+      const stats = await fs.stat(filePath);
+      return {
+        filename: file,
+        size: stats.size,
+        uploadDate: stats.mtime,
+        // Add more details as needed
+      };
+    }));
+
+    res.json({ files: fileDetails });
+  } catch (error) {
+    console.error('Error reading uploads directory:', error);
+    res.status(500).json({ error: 'Failed to retrieve resumes' });
+  }
+});
+
+
+
+
+
 
 // ------------------- RECEIVE JOB DATA FROM PROJECT F ------------------- //
 // Protect this route using JWT
