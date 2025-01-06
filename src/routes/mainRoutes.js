@@ -1,45 +1,55 @@
-// mainRoutes.js
-
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-
 const fs = require('fs').promises;
 const path = require('path');
 
-// multer configuration:
+const router = express.Router();
 
+// Multer configuration
 const upload = multer({
   dest: 'uploads/',
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf' || 
-        file.mimetype === 'application/msword' ||
-        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    const allowedMimeTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('Invalid file type. Only PDF and DOCX files are allowed.'));
     }
-  }
+  },
 });
-
-
 
 // Import constants
 const { PROJECT_B_URL, PROJECT_F_URL } = require('../../config/const');
-
-// Read PROJECT_Z_URL from environment (.env)
 const PROJECT_Z_URL = process.env.PROJECT_Z_URL;
 
-// JWT authentication middleware
+// Middleware
 const authenticateToken = require('../middleware/authenticateToken');
 
+// ------------------- HELPER FUNCTIONS ------------------- //
 
+/**
+ * Notify Project F
+ * @param {string} message - Notification message
+ * @param {string} status - Status level (success, error, info)
+ * @param {string} source - Source of the notification
+ * @param {object} details - Additional details to include
+ */
+const notifyProjectF = async (message, status, source, details = {}) => {
+  try {
+    await axios.post(PROJECT_F_URL, { message, status, source, ...details });
+  } catch (error) {
+    console.error('Failed to notify Project F:', error.message);
+  }
+};
 
-const router = express.Router();
+// ------------------- ROUTES ------------------- //
 
 // ------------------- API STATUS ROUTE ------------------- //
 router.get('/api/status', (req, res) => {
@@ -52,11 +62,11 @@ router.get('/api/status', (req, res) => {
 
 // ------------------- HEALTHCHECK ------------------- //
 router.get('/health', (req, res) => {
-  res.status(200).json({ 
-      status: 'healthy',
-      message: 'Project A is up and running',
-      timestamp: new Date().toISOString(),
-      service: 'Project A'
+  res.status(200).json({
+    status: 'healthy',
+    message: 'Project A is up and running',
+    timestamp: new Date().toISOString(),
+    service: 'Project A',
   });
 });
 
@@ -64,22 +74,14 @@ router.get('/health', (req, res) => {
 
 /**
  * SIGNUP ROUTE
- * Expects { username, name, email, password, accountType }
- * Forwards to Project Z at /api/auth/signup
  */
 router.post('/api/auth/signup', async (req, res) => {
   try {
     const { username, name, email, password, accountType } = req.body;
-    console.log('PROJECT_Z_URL:', process.env.PROJECT_Z_URL); // Add this
-        console.log('Signup payload:', req.body); // Add this too
-
     if (!username || !name || !email || !password || !accountType) {
       return res.status(400).json({ error: 'All fields are required.' });
     }
 
-    console.log('Signup request received:', { username, name, email, accountType });
-
-    // Forward raw user details to Project Z for processing
     const response = await axios.post(`${PROJECT_Z_URL}/api/auth/signup`, {
       username,
       name,
@@ -88,292 +90,115 @@ router.post('/api/auth/signup', async (req, res) => {
       accountType,
     });
 
-    // Check for a successful response from Project Z
-    if (response.status === 200) {
-      console.log('Account successfully created in Project Z:', response.data);
+    await notifyProjectF(
+      `Account created for ${username} (${email})`,
+      'success',
+      'Project A'
+    );
 
-      // Notify Project F about the new account creation
-      await axios.post(PROJECT_F_URL, {
-        message: `Account created for ${username} (${email}).`,
-        status: 'success',
-        source: 'Project A',
-      });
-
-      console.log('Notification sent to Project F for new account creation.');
-
-      // Send the response back to the client
-      return res.status(200).json({
-        message: 'Account created successfully.',
-        data: response.data,
-      });
-    } else {
-      console.error('Error from Project Z:', response.data);
-
-      // Notify Project F about the signup failure
-      await axios.post(PROJECT_F_URL, {
-        message: `Signup failed for ${email}. (Error from Z)`,
-        status: 'error',
-        source: 'Project A',
-      });
-
-      return res.status(response.status).json({
-        error: response.data.error || 'Unknown error from Project Z.',
-      });
-    }
+    res.status(200).json({ message: 'Account created successfully', data: response.data });
   } catch (error) {
     console.error('Signup error:', error.message);
-
-    // Handle errors from Project Z or Project F
-    if (error.response) {
-      // Error response from the forwarded service
-      console.error('Error response from Project Z:', error.response.data);
-
-      // Notify Project F about the signup failure
-      await axios.post(PROJECT_F_URL, {
-        message: `Signup failed for ${req.body?.email} (Project Z error).`,
-        status: 'error',
-        source: 'Project A',
-      });
-
-      return res.status(error.response.status).json({
-        error: error.response.data.error || 'Error from Project Z.',
-      });
-    }
-
-    // General error fallback
-    await axios.post(PROJECT_F_URL, {
-      message: `Signup failed for ${req.body?.email}. Internal server error.`,
-      status: 'error',
-      source: 'Project A',
-    });
-
-    res.status(500).json({ error: 'Signup failed due to an internal server error.' });
+    const status = error.response?.status || 500;
+    const errorMessage = error.response?.data?.error || 'Internal server error';
+    await notifyProjectF(
+      `Signup failed for ${req.body?.email}. ${errorMessage}`,
+      'error',
+      'Project A'
+    );
+    res.status(status).json({ error: errorMessage });
   }
 });
 
 /**
  * LOGIN ROUTE
- * Expects { email, password }
- * Forwards to Project Z at /api/auth/login
  */
 router.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Basic validation
-        if (!email || !password) {
-            console.log('[Validation Error] Missing email or password in request payload.');
-            return res.status(400).json({ error: 'Email and password are required.' });
-        }
-        if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            console.log('[Validation Error] Invalid email format:', email);
-            return res.status(400).json({ error: 'Invalid email format.' });
-        }
-        if (password.length < 6) {
-            console.log('[Validation Error] Password too short:', { email });
-            return res.status(400).json({ error: 'Password must be at least 6 characters.' });
-        }
-
-        console.log('[Request Initiated] Forwarding login request to Project Z:', { email });
-
-        // Forward login credentials to Project Z
-        const response = await axios.post(`${PROJECT_Z_URL}/api/auth/login`, {
-            email,
-            password,
-        });
-
-        console.log('[Response Received] Project Z response:', {
-            status: response.status,
-            data: response.data,
-        });
-
-        if (response.status === 200) {
-            const { token, user } = response.data;
-
-            // Notify Project F
-            console.log('[Notification] Sending login success notification to Project F:', {
-                user: user?.username || email,
-            });
-            await axios.post(PROJECT_F_URL, {
-                message: `User logged in: ${user?.username || email}`,
-                status: 'success',
-                source: 'Project A',
-            });
-
-            console.log('[Login Success] Returning token and user info to frontend:', {
-                user: user?.username,
-            });
-            return res.status(200).json({
-                message: 'Login successful.',
-                token,
-                user,
-            });
-        } else {
-            console.error('[Unexpected Response] Non-200 status from Project Z:', {
-                status: response.status,
-                error: response.data.error,
-            });
-
-            await axios.post(PROJECT_F_URL, {
-                message: `Login attempt failed for ${email} (Z returned status: ${response.status}).`,
-                status: 'error',
-                source: 'Project A',
-            });
-
-            return res.status(response.status).json({
-                error: response.data.error || 'Unknown error from Project Z.',
-            });
-        }
-    } catch (error) {
-        console.error('[Login Error] An error occurred:', error.message);
-
-        if (error.response) {
-            console.error('[Error Response from Project Z] Details:', {
-                status: error.response.status,
-                data: error.response.data,
-            });
-
-            await axios.post(PROJECT_F_URL, {
-                message: `Login error for ${req.body.email}: ${error.response.data.error}`,
-                status: 'error',
-                source: 'Project A',
-            });
-
-            return res.status(error.response.status).json({
-                error: error.response.data.error || 'Error from Project Z.',
-            });
-        }
-
-        // General error fallback
-        console.error('[General Error] Internal server error occurred during login for:', email);
-        await axios.post(PROJECT_F_URL, {
-            message: `Login error for ${req.body.email}. Internal server error.`,
-            status: 'error',
-            source: 'Project A',
-        });
-
-        res.status(500).json({ error: 'Login failed due to an internal server error.' });
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
     }
+
+    const response = await axios.post(`${PROJECT_Z_URL}/api/auth/login`, {
+      email,
+      password,
+    });
+
+    const { token, user } = response.data;
+    await notifyProjectF(
+      `User logged in: ${user.username}`,
+      'success',
+      'Project A'
+    );
+
+    res.status(200).json({ message: 'Login successful', token, user });
+  } catch (error) {
+    console.error('Login error:', error.message);
+    const status = error.response?.status || 500;
+    const errorMessage = error.response?.data?.error || 'Internal server error';
+    await notifyProjectF(
+      `Login failed for ${req.body?.email}. ${errorMessage}`,
+      'error',
+      'Project A'
+    );
+    res.status(status).json({ error: errorMessage });
+  }
 });
 
-// ------------------- FORM SUBMISSION ROUTE ------------------- //
-// Protect this route using JWT
+// ------------------- PROFILE SUBMISSION ------------------- //
+
 router.post('/users', authenticateToken, async (req, res) => {
   try {
-    // [NEW] Enhanced authentication check
-    if (!req.user) {
-      await axios.post(PROJECT_F_URL, {
-        message: `Unauthorized profile submission attempt`,
-        status: 'error',
-        source: 'Project A',
-        timestamp: new Date().toISOString()
-      });
-      return res.status(401).json({ error: 'Unauthorized. Please log in to submit your profile.' });
-    }
-
     const { name, email, phone, address, location, skills, profile_summary } = req.body;
-    
-    // [NEW] Enhanced validation checks
     if (!name || !email || !phone || !address || !location) {
-      await axios.post(PROJECT_F_URL, {
-        message: `Profile submission failed: Missing required fields for user ${email}`,
-        status: 'error',
-        source: 'Project A',
-        timestamp: new Date().toISOString()
-      });
       return res.status(400).json({ error: 'All required fields must be filled.' });
     }
 
-    // [NEW] Email validation
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      await axios.post(PROJECT_F_URL, {
-        message: `Profile submission failed: Invalid email format for user ${email}`,
-        status: 'error',
-        source: 'Project A',
-        timestamp: new Date().toISOString()
-      });
-      return res.status(400).json({ error: 'Invalid email format.' });
-    }
-
-    console.log('Received data:', req.body);
-
-    // [NEW] Enhanced data forwarding to Project B
     const response = await axios.post(PROJECT_B_URL, {
       name,
       email,
       phone,
       address,
       location,
-      skills: Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim()),
+      skills: Array.isArray(skills) ? skills : skills.split(',').map((s) => s.trim()),
       profile_summary,
-      userId: req.user.id, // Add user ID from token
-      lastUpdated: new Date().toISOString()
+      userId: req.user.id,
     });
 
-    console.log('Response from Project B:', response.data);
+    await notifyProjectF(
+      `Profile submitted for ${name} (${email})`,
+      'success',
+      'Project A'
+    );
 
-    // [NEW] Enhanced success notification to F
-    await axios.post(PROJECT_F_URL, {
-      message: `Database submission success for user ${name} (${email}).`,
-      status: 'success',
-      source: 'Project A',
-      timestamp: new Date().toISOString(),
-      details: {
-        userId: req.user.id,
-        email,
-        location,
-        skills: Array.isArray(skills) ? skills.join(', ') : skills,
-        actionType: 'profile_update'
-      }
-    });
-
-    // [NEW] Enhanced success response
     res.status(200).json({
       status: 'success',
       message: 'Profile updated successfully',
       data: response.data,
-      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error processing profile submission:', error.message);
-
-    // [NEW] Enhanced error notification to F
-    await axios.post(PROJECT_F_URL, {
-      message: `Database submission error for user ${req.body?.name} (${req.body?.email}).`,
-      status: 'error',
-      source: 'Project A',
-      timestamp: new Date().toISOString(),
-      details: {
-        error: error.message,
-        userId: req.user?.id,
-        attemptedAction: 'profile_update',
-        errorCode: error.response?.status || 500
-      }
-    });
-
-    res.status(500).json({ 
-      error: 'Failed to forward data to Project B.',
-      details: error.message,
-      timestamp: new Date().toISOString()
-    });
+    console.error('Profile submission error:', error.message);
+    res.status(500).json({ error: 'Failed to submit profile' });
   }
 });
 
-// ------------------- UPLOAD resume route ------------------- //
-// --------------------FORWARD =>> THE PROJECT E-PARSER ------------------- //
+// ------------------- FILE UPLOAD ------------------- //
 
-router.post('/api/upload', upload.single('resume'), async (req, res) => {
+router.post('/api/upload', authenticateToken, upload.single('resume'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Notify Project F about successful upload
-    await axios.post(PROJECT_F_URL, {
-      message: `Resume uploaded: ${req.file.originalname}`,
-      status: 'success',
-      source: 'Project A'
-    });
+    const fileBuffer = await fs.readFile(req.file.path);
+    // Add additional validation or processing if needed
+
+    await notifyProjectF(
+      `Resume uploaded by ${req.user.username}: ${req.file.originalname}`,
+      'success',
+      'Project A'
+    );
 
     res.json({
       message: 'File uploaded successfully',
@@ -381,103 +206,59 @@ router.post('/api/upload', upload.single('resume'), async (req, res) => {
         filename: req.file.filename,
         originalname: req.file.originalname,
         size: req.file.size,
-        mimetype: req.file.mimetype
-      }
+        mimetype: req.file.mimetype,
+      },
     });
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ 
-      error: 'File upload failed',
-      details: error.message 
-    });
+    console.error('Upload error:', error.message);
+    if (req.file) {
+      await fs.unlink(req.file.path);
+    }
+    res.status(500).json({ error: 'File upload failed', details: error.message });
   }
 });
 
+// ------------------- RESUME RETRIEVAL ------------------- //
 
-// ====================  resume route 
 router.get('/api/resumes', async (req, res) => {
   try {
     const uploadDir = path.join(__dirname, '../../uploads');
     const files = await fs.readdir(uploadDir);
-    
-    const fileDetails = await Promise.all(files.map(async file => {
-      const filePath = path.join(uploadDir, file);
-      const stats = await fs.stat(filePath);
-      return {
-        filename: file,
-        size: stats.size,
-        uploadDate: stats.mtime,
-        // Add more details as needed
-      };
-    }));
+
+    const fileDetails = await Promise.all(
+      files.map(async (file) => {
+        const filePath = path.join(uploadDir, file);
+        const stats = await fs.stat(filePath);
+        return {
+          filename: file,
+          size: stats.size,
+          uploadDate: stats.mtime,
+        };
+      })
+    );
 
     res.json({ files: fileDetails });
   } catch (error) {
-    console.error('Error reading uploads directory:', error);
+    console.error('Error retrieving resumes:', error.message);
     res.status(500).json({ error: 'Failed to retrieve resumes' });
   }
 });
 
+// ------------------- JOB DATA ------------------- //
 
-
-
-
-
-// ------------------- RECEIVE JOB DATA FROM PROJECT F ------------------- //
-// Protect this route using JWT
 router.post('/api/receive-jobs', authenticateToken, async (req, res) => {
   try {
     const jobData = req.body;
-    console.log('Received job data from Project F:', jobData);
-
-    // Optionally notify F about the received job data
-    await axios.post(PROJECT_F_URL, {
-      message: 'Received job data from F successfully.',
-      status: 'info',
-      source: 'Project A',
-    });
+    await notifyProjectF(
+      'Received job data from Project F',
+      'info',
+      'Project A'
+    );
 
     res.status(200).json({ message: 'Job data received successfully', data: jobData });
   } catch (error) {
-    console.error('Error receiving job data:', error.message);
-
-    // Notify F about the error
-    await axios.post(PROJECT_F_URL, {
-      message: 'Error receiving job data from F.',
-      status: 'error',
-      source: 'Project A',
-      details: error.message,
-    });
-
-    res.status(500).json({ error: 'Failed to receive job data.' });
-  }
-});
-
-// ------------------- NOTIFY PROJECT F ------------------- //
-// Protect this route using JWT
-router.post('/api/notify', authenticateToken, async (req, res) => {
-  try {
-    const { message } = req.body;
-    if (!message) {
-      return res.status(400).json({ error: 'Message is required.' });
-    }
-
-    await axios.post(PROJECT_F_URL, { message });
-    console.log('Notification sent to Project F:', message);
-
-    res.status(200).json({ message: 'Notification sent to Project F successfully.' });
-  } catch (error) {
-    console.error('Error notifying Project F:', error.message);
-
-    // Notify F about the error
-    await axios.post(PROJECT_F_URL, {
-      message: 'Error notifying Project F.',
-      status: 'error',
-      source: 'Project A',
-      details: error.message,
-    });
-
-    res.status(500).json({ error: 'Failed to send notification to Project F.' });
+    console.error('Job data error:', error.message);
+    res.status(500).json({ error: 'Failed to process job data' });
   }
 });
 
