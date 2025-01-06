@@ -486,38 +486,65 @@ try {
 
  // ========== UPLOAD resume ==========
 
-    document.getElementById('upload-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData();
-        const fileInput = document.getElementById('resume-file');
-        
-        formData.append('resume', fileInput.files[0]);
-        
-        try {
-          const response = await fetch('/api/upload', {
+    // Update the file upload event listener
+document.getElementById('upload-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const uploadResponse = document.getElementById('upload-response');
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+        uploadResponse.textContent = 'Please log in to upload files';
+        uploadResponse.style.color = 'red';
+        return;
+    }
+
+    const fileInput = document.getElementById('resume-file');
+    if (!fileInput.files.length) {
+        uploadResponse.textContent = 'Please select a file';
+        uploadResponse.style.color = 'red';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('resume', fileInput.files[0]);
+    
+    try {
+        const response = await fetch('/api/upload', {
             method: 'POST',
-            body: formData,
-          });
-      
-          const result = await response.json();
-          const uploadResponse = document.getElementById('upload-response');
-      
-          if (response.ok) {
-            uploadResponse.textContent = 'File uploaded successfully!';
-            uploadResponse.style.color = 'green';
-          } else {
-            uploadResponse.textContent = `Error: ${result.error}`;
-            uploadResponse.style.color = 'red';
-          }
-        } catch (error) {
-          console.error('Upload failed:', error);
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({
+                error: `Upload failed with status: ${response.status}`
+            }));
+            throw new Error(errorData.error || 'Upload failed');
         }
-      });
+        
+        const result = await response.json();
+        
+        uploadResponse.textContent = 'File uploaded successfully!';
+        uploadResponse.style.color = 'green';
+        
+        // Refresh the resumes list if the function exists
+        if (typeof displayResumes === 'function') {
+            displayResumes();
+        }
+        
+        // Clear the file input
+        fileInput.value = '';
+        
+    } catch (error) {
+        console.error('Upload failed:', error);
+        uploadResponse.textContent = `Error: ${error.message}`;
+        uploadResponse.style.color = 'red';
+    }
+});
       
-
-
-
-
 
 // --------------- Resume display functionality+++++++++++++++++++
 

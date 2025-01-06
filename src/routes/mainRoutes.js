@@ -8,8 +8,23 @@ const path = require('path');
 const router = express.Router();
 
 // Multer configuration
+const storage = multer.diskStorage({
+  destination: 'uploads/',
+  filename: function (req, file, cb) {
+    // Get user info from auth token
+    const username = req.user?.username || 'anonymous';
+    
+    // Create filename with pattern: username_timestamp_originalname
+    const timestamp = Date.now();
+    const originalName = file.originalname;
+    const filename = `${username}_${timestamp}_${originalName}`;
+    
+    cb(null, filename);
+  }
+});
+
 const upload = multer({
-  dest: 'uploads/',
+  storage: storage, // Use our custom storage config instead of 'dest'
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
@@ -185,7 +200,7 @@ router.post('/users', authenticateToken, async (req, res) => {
 
 // ------------------- FILE UPLOAD ------------------- //
 
-router.post('/api/upload', authenticateToken, upload.single('resume'), async (req, res) => {
+router.post('/upload', authenticateToken, upload.single('resume'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -220,7 +235,7 @@ router.post('/api/upload', authenticateToken, upload.single('resume'), async (re
 
 // ------------------- RESUME RETRIEVAL ------------------- //
 
-router.get('/api/resumes', async (req, res) => {
+router.get('/resumes', async (req, res) => {
   try {
     const uploadDir = path.join(__dirname, '../../uploads');
     const files = await fs.readdir(uploadDir);
@@ -229,10 +244,21 @@ router.get('/api/resumes', async (req, res) => {
       files.map(async (file) => {
         const filePath = path.join(uploadDir, file);
         const stats = await fs.stat(filePath);
+        
+        // Get the mimetype based on file extension
+        const ext = path.extname(file).toLowerCase();
+        const mimeTypes = {
+          '.pdf': 'application/pdf',
+          '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          '.doc': 'application/msword'
+        };
+
         return {
           filename: file,
+          originalname: file, // Use filename as originalname
           size: stats.size,
-          uploadDate: stats.mtime,
+          mimetype: mimeTypes[ext] || 'application/octet-stream',
+          uploadDate: stats.mtime
         };
       })
     );
