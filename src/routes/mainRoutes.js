@@ -234,7 +234,14 @@ router.post('/upload', authenticateToken.optional, upload.single('resume'), asyn
   const isPublic = !user;
   const fileData = req.file;
 
-  if (!fileData) return res.status(400).json({ error: 'No file uploaded' });
+  console.log("1. User data:", user); // Log user data (or null if not logged in)
+  console.log("2. Is public upload:", isPublic); // Log whether this is a public upload
+  console.log("3. File data from Multer:", fileData); // Log the file data from Multer
+
+  if (!fileData) {
+      console.error("4. No file uploaded."); // Log error if no file was uploaded
+      return res.status(400).json({ error: 'No file uploaded' });
+  }
 
   try {
       // Metadata for public or private upload
@@ -245,13 +252,19 @@ router.post('/upload', authenticateToken.optional, upload.single('resume'), asyn
           filename: fileData.originalname,
       };
 
+      console.log("5. Metadata prepared:", metadata); // Log prepared metadata
+
       // Send to Project Z for scanning
+      console.log("6. Sending file to Project Z for scanning...");
       const scanResponse = await axios.post(`${PROJECT_Z_URL}/api/scan`, {
-          file: fileData,
+          file: fileData, // Ensure this is correctly handled in Project Z
           metadata,
       });
 
+      console.log("7. Scan response from Project Z:", scanResponse.data); // Log response from Project Z
+
       if (!scanResponse.data.success) {
+          console.error("8. File failed validation during scanning.");
           await fs.unlink(fileData.path); // Delete file if scan fails
           return res.status(400).json({ error: 'File failed validation' });
       }
@@ -261,11 +274,17 @@ router.post('/upload', authenticateToken.optional, upload.single('resume'), asyn
           ? path.join(__dirname, '../../uploads/public', `${metadata.sessionHash}_${fileData.originalname}`)
           : path.join(__dirname, '../../uploads/private', user.username, fileData.originalname);
 
+      console.log("9. Saving file to:", savePath); // Log where the file is being saved
       await fs.rename(fileData.path, savePath);
 
       // Schedule deletion for public uploads
-      if (isPublic) scheduleFileDeletion(savePath, 3600);
+      if (isPublic) {
+          console.log("10. Scheduling file deletion for public upload.");
+          scheduleFileDeletion(savePath, 3600);
+      }
 
+      // Notify Project F
+      console.log("11. Notifying Project F of successful upload.");
       await notifyProjectF(
           `${isPublic ? 'Public' : 'Private'} resume uploaded`,
           'success',
@@ -275,11 +294,15 @@ router.post('/upload', authenticateToken.optional, upload.single('resume'), asyn
 
       res.json({ message: 'File uploaded successfully', metadata });
   } catch (error) {
-      console.error('Upload error:', error.message);
-      if (fileData) await fs.unlink(fileData.path); // Cleanup
+      console.error("Upload error:", error.message); // Log the error
+      if (fileData) {
+          console.log("12. Cleaning up file due to error.");
+          await fs.unlink(fileData.path); // Cleanup uploaded file on error
+      }
       res.status(500).json({ error: 'File upload failed', details: error.message });
   }
 });
+
 
 
 // ------------------- RESUME RETRIEVAL ------------------- //
