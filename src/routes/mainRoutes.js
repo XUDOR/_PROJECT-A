@@ -270,6 +270,34 @@ router.get('/resumes', async (req, res) => {
   }
 });
 
+// ------------------- RESUME DELETION ------------------- //
+
+
+router.delete('/resumes/:filename', authenticateToken, async (req, res) => {
+  const { filename } = req.params;
+
+  try {
+      const filePath = path.join(__dirname, '../../uploads', filename);
+      await fs.unlink(filePath);
+
+      await notifyProjectF(
+          `Resume deleted by ${req.user.username}: ${filename}`,
+          'info',
+          'Project A'
+      );
+
+      res.json({ message: 'Resume deleted successfully' });
+  } catch (error) {
+      console.error('Error deleting file:', error);
+      res.status(500).json({ error: 'Failed to delete resume' });
+  }
+});
+
+
+
+
+
+
 // ------------------- JOB DATA ------------------- //
 
 router.post('/api/receive-jobs', authenticateToken, async (req, res) => {

@@ -544,42 +544,82 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
         uploadResponse.style.color = 'red';
     }
 });
-      
+ 
+
+
+// --------------- Resume DELETION function+++++++++++++++++++
+
+
+async function deleteResume(filename) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in to delete resumes');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/resumes/${filename}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete resume');
+        }
+
+        alert('Resume deleted successfully!');
+        displayResumes(); // Refresh the list
+    } catch (error) {
+        console.error('Error deleting resume:', error);
+        alert('Failed to delete resume.');
+    }
+}
 
 // --------------- Resume display functionality+++++++++++++++++++
-
 
 const resumesContainer = document.getElementById('resumes-container');
 const refreshResumesButton = document.getElementById('refresh-resumes-btn');
 
 async function displayResumes() {
-  try {
-    const response = await fetch('/api/resumes');
-    const result = await response.json();
-    
-    if (response.ok && result.files) {
-      resumesContainer.innerHTML = '';
-      
-      result.files.forEach(file => {
-        const resumeDiv = document.createElement('div');
-        resumeDiv.classList.add('resume-row');
-        resumeDiv.innerHTML = `
-          <div class="bundle-content">
-            <strong>${file.originalname}</strong>
-            <div class="file-details">
-              <span>Size: ${(file.size / 1024).toFixed(2)} KB</span>
-              <span>Type: ${file.mimetype}</span>
-              <span>Uploaded: ${new Date(file.uploadDate).toLocaleString()}</span>
-            </div>
-          </div>
-        `;
-        resumesContainer.appendChild(resumeDiv);
-      });
+    try {
+        const response = await fetch('/api/resumes');
+        const result = await response.json();
+
+        if (response.ok && result.files) {
+            resumesContainer.innerHTML = '';
+
+            result.files.forEach((file) => {
+                const resumeDiv = document.createElement('div');
+                resumeDiv.classList.add('resume-row');
+                resumeDiv.innerHTML = `
+                    <div class="bundle-content">
+                        <strong>${file.originalname}</strong>
+                        <div class="file-details">
+                            <span>Size: ${(file.size / 1024).toFixed(2)} KB</span>
+                            <span>Type: ${file.mimetype}</span>
+                            <span>Uploaded: ${new Date(file.uploadDate).toLocaleString()}</span>
+                        </div>
+                        <button class="delete-btn" data-filename="${file.filename}">Delete</button>
+                    </div>
+                `;
+                resumesContainer.appendChild(resumeDiv);
+            });
+
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const filename = button.getAttribute('data-filename');
+                    deleteResume(filename);
+                });
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching resumes:', error);
+        resumesContainer.innerHTML = 'Failed to load resumes.';
     }
-  } catch (error) {
-    console.error('Error fetching resumes:', error);
-    resumesContainer.innerHTML = 'Failed to load resumes.';
-  }
 }
 
 if (refreshResumesButton) {
