@@ -5,6 +5,8 @@ const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
 
+
+
 const router = express.Router();
 
 // Multer configuration
@@ -198,40 +200,87 @@ router.post('/users', authenticateToken, async (req, res) => {
   }
 });
 
+// Utility Functions
+
+/**
+ * Generates a random session hash (10 characters) for public uploads.
+ */
+function generateSessionHash() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length: 10 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+}
+
+/**
+* Schedules deletion of a file after the specified time-to-live (TTL).
+* @param {string} filePath - The path to the file to delete.
+* @param {number} ttl - Time to live in seconds.
+*/
+function scheduleFileDeletion(filePath, ttl) {
+  setTimeout(async () => {
+      try {
+          await fs.unlink(filePath);
+          console.log(`File ${filePath} deleted after session expired.`);
+      } catch (error) {
+          console.error(`Failed to delete file ${filePath}:`, error.message);
+      }
+  }, ttl * 1000);
+}
+
+
 // ------------------- FILE UPLOAD ------------------- //
 
-router.post('/upload', authenticateToken, upload.single('resume'), async (req, res) => {
+router.post('/upload', authenticateToken.optional, upload.single('resume'), async (req, res) => {
+  const user = req.user || null;
+  const isPublic = !user;
+  const fileData = req.file;
+
+  if (!fileData) return res.status(400).json({ error: 'No file uploaded' });
+
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+      // Metadata for public or private upload
+      const metadata = {
+          username: user?.username || null,
+          sessionHash: isPublic ? generateSessionHash() : null,
+          timestamp: Date.now(),
+          filename: fileData.originalname,
+      };
 
-    const fileBuffer = await fs.readFile(req.file.path);
-    // Add additional validation or processing if needed
+      // Send to Project Z for scanning
+      const scanResponse = await axios.post(`${PROJECT_Z_URL}/api/scan`, {
+          file: fileData,
+          metadata,
+      });
 
-    await notifyProjectF(
-      `Resume uploaded by ${req.user.username}: ${req.file.originalname}`,
-      'success',
-      'Project A'
-    );
+      if (!scanResponse.data.success) {
+          await fs.unlink(fileData.path); // Delete file if scan fails
+          return res.status(400).json({ error: 'File failed validation' });
+      }
 
-    res.json({
-      message: 'File uploaded successfully',
-      file: {
-        filename: req.file.filename,
-        originalname: req.file.originalname,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-      },
-    });
+      // Save file in public or private folder
+      const savePath = isPublic
+          ? path.join(__dirname, '../../uploads/public', `${metadata.sessionHash}_${fileData.originalname}`)
+          : path.join(__dirname, '../../uploads/private', user.username, fileData.originalname);
+
+      await fs.rename(fileData.path, savePath);
+
+      // Schedule deletion for public uploads
+      if (isPublic) scheduleFileDeletion(savePath, 3600);
+
+      await notifyProjectF(
+          `${isPublic ? 'Public' : 'Private'} resume uploaded`,
+          'success',
+          'Project A',
+          metadata
+      );
+
+      res.json({ message: 'File uploaded successfully', metadata });
   } catch (error) {
-    console.error('Upload error:', error.message);
-    if (req.file) {
-      await fs.unlink(req.file.path);
-    }
-    res.status(500).json({ error: 'File upload failed', details: error.message });
+      console.error('Upload error:', error.message);
+      if (fileData) await fs.unlink(fileData.path); // Cleanup
+      res.status(500).json({ error: 'File upload failed', details: error.message });
   }
 });
+
 
 // ------------------- RESUME RETRIEVAL ------------------- //
 

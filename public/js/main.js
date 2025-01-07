@@ -1,15 +1,17 @@
 document.addEventListener('DOMContentLoaded', async function () {
     // Fetch the constants from the backend
     let PROJECT_F_NOTIFICATIONS_URL;
-try {
-    const response = await fetch('/api/constants');
-    if (!response.ok) throw new Error('Failed to fetch constants');
-    const constants = await response.json();
-    PROJECT_F_NOTIFICATIONS_URL = constants.PROJECT_F_NOTIFICATIONS_URL;
-} catch (error) {
-    console.error('Error loading constants:', error);
-    return; // Stop execution if constants can't be loaded
-}
+    try {
+        const response = await fetch('/api/constants');
+        if (!response.ok) throw new Error('Failed to fetch constants');
+        const constants = await response.json();
+        PROJECT_F_NOTIFICATIONS_URL = constants.PROJECT_F_NOTIFICATIONS_URL;
+    } catch (error) {
+        console.error('Error loading constants:', error);
+        alert('Failed to initialize application. Please try again later.');
+        return;
+    }
+    
 
 
     // ====================================
@@ -486,20 +488,11 @@ try {
 
  // ========== UPLOAD resume ==========
 
-    // Update the file upload event listener
-document.getElementById('upload-form').addEventListener('submit', async (e) => {
+ document.getElementById('upload-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const uploadResponse = document.getElementById('upload-response');
-    
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    if (!token) {
-        uploadResponse.textContent = 'Please log in to upload files';
-        uploadResponse.style.color = 'red';
-        return;
-    }
-
     const fileInput = document.getElementById('resume-file');
+
     if (!fileInput.files.length) {
         uploadResponse.textContent = 'Please select a file';
         uploadResponse.style.color = 'red';
@@ -508,42 +501,39 @@ document.getElementById('upload-form').addEventListener('submit', async (e) => {
 
     const formData = new FormData();
     formData.append('resume', fileInput.files[0]);
-    
+
     try {
+        const token = localStorage.getItem('token'); // Check if user is logged in
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         const response = await fetch('/api/upload', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData
+            headers,
+            body: formData,
         });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({
-                error: `Upload failed with status: ${response.status}`
-            }));
-            throw new Error(errorData.error || 'Upload failed');
-        }
-        
+
         const result = await response.json();
-        
-        uploadResponse.textContent = 'File uploaded successfully!';
-        uploadResponse.style.color = 'green';
-        
-        // Refresh the resumes list if the function exists
-        if (typeof displayResumes === 'function') {
-            displayResumes();
+
+        if (response.ok) {
+            uploadResponse.textContent = 'File uploaded successfully!';
+            uploadResponse.style.color = 'green';
+
+            if (typeof displayResumes === 'function') {
+                displayResumes();
+            }
+        } else {
+            uploadResponse.textContent = `Upload failed: ${result.error}`;
+            uploadResponse.style.color = 'red';
         }
-        
-        // Clear the file input
-        fileInput.value = '';
-        
     } catch (error) {
         console.error('Upload failed:', error);
         uploadResponse.textContent = `Error: ${error.message}`;
         uploadResponse.style.color = 'red';
+    } finally {
+        fileInput.value = ''; // Clear the file input
     }
 });
+
  
 
 
@@ -570,13 +560,17 @@ async function deleteResume(filename) {
             throw new Error(errorData.error || 'Failed to delete resume');
         }
 
+        // Dynamically remove the resume from the list
+        const resumeElement = document.querySelector(`button[data-filename="${filename}"]`).closest('.resume-row');
+        if (resumeElement) resumeElement.remove();
+
         alert('Resume deleted successfully!');
-        displayResumes(); // Refresh the list
     } catch (error) {
         console.error('Error deleting resume:', error);
         alert('Failed to delete resume.');
     }
 }
+
 
 // --------------- Resume display functionality+++++++++++++++++++
 
