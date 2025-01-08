@@ -46,6 +46,74 @@ const upload = multer({
 const { PROJECT_B_URL, PROJECT_F_URL } = require('../../config/const');
 const PROJECT_Z_URL = process.env.PROJECT_Z_URL;
 
+
+
+//Unified upload endpoint
+router.post('/upload', upload.single('resume'), async (req, res) => {
+    try {
+        const isPublic = !req.user;
+        const fileData = req.file;
+
+        if (!fileData) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const metadata = {
+            uploadType: isPublic ? 'public' : 'user',
+            username: req.user?.username || null,
+            ipAddress: req.ip,
+            filePath: fileData.path,
+            uploadTime: new Date().toISOString(),
+        };
+
+        // Send file to Project Z for scanning
+        const scanResponse = await axios.post(`${PROJECT_Z_URL}/api/scan`, {
+            filePath: metadata.filePath,
+            metadata,
+        });
+
+        if (!scanResponse.data.success) {
+            if (isPublic) await fs.unlink(fileData.path); // Delete public file on failure
+            return res.status(400).json({ error: 'File failed validation', details: scanResponse.data });
+        }
+
+        // If public, schedule deletion
+        if (isPublic) {
+            setTimeout(async () => {
+                try {
+                    await fs.unlink(fileData.path);
+                    console.log(`Public file ${fileData.path} deleted.`);
+                } catch (err) {
+                    console.error(`Failed to delete file: ${err.message}`);
+                }
+            }, 3600 * 1000); // Delete after 1 hour
+        }
+
+        res.json({ message: 'File uploaded and scanned successfully', metadata, scanResult: scanResponse.data });
+    } catch (error) {
+        console.error('Upload error:', error.message);
+        if (req.file) {
+            await fs.unlink(req.file.path); // Cleanup uploaded file on error
+        }
+        res.status(500).json({ error: 'File upload failed', details: error.message });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Middleware
 const authenticateToken = require('../middleware/authenticateToken');
 
@@ -228,7 +296,7 @@ function scheduleFileDeletion(filePath, ttl) {
 
 
 // ------------------- FILE UPLOAD ------------------- //
-
+console.log('Initializing /upload route');
 router.post('/upload', authenticateToken.optional, upload.single('resume'), async (req, res) => {
   const user = req.user || null;
   const isPublic = !user;
