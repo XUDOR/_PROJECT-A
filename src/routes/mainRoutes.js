@@ -67,6 +67,8 @@ router.post('/upload', upload.single('resume'), async (req, res) => {
         };
 
         // Send file to Project Z for scanning
+        console.log('Using Project Z URL:', PROJECT_Z_URL);
+
         const scanResponse = await axios.post(`${PROJECT_Z_URL}/api/scan`, {
             filePath: metadata.filePath,
             metadata,
